@@ -7,6 +7,7 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import build_optimizer, build_runner
 
 from mmseg.core import DistEvalHook, EvalHook
+from mmseg.core import UpsampleHook
 from mmseg.datasets import build_dataloader, build_dataset
 from mmseg.utils import get_root_logger
 
@@ -113,4 +114,8 @@ def train_segmentor(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
+
+    if cfg.resume_from is None and cfg.load_from is None:
+        runner.register_hook(UpsampleHook(model, cfg, distributed))
+
     runner.run(data_loaders, cfg.workflow)

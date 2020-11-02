@@ -9,6 +9,7 @@ from mmseg.core import build_pixel_sampler
 from mmseg.ops import resize
 from ..builder import build_loss
 from ..losses import accuracy
+from mmseg.models.utils import DUpsamplingBlock
 
 
 class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
@@ -59,7 +60,8 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
                      loss_weight=1.0),
                  ignore_index=255,
                  sampler=None,
-                 align_corners=False):
+                 align_corners=False,
+                 dupsample=None):
         super(BaseDecodeHead, self).__init__()
         self._init_inputs(in_channels, in_index, input_transform)
         self.channels = channels
@@ -77,7 +79,12 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         else:
             self.sampler = None
 
-        self.conv_seg = nn.Conv2d(channels, num_classes, kernel_size=1)
+        if dupsample is not None:
+            self.dupsample = DUpsamplingBlock(channels, **dupsample, num_class=num_classes, pad=0)
+        else:
+            self.dupsample = None
+            self.conv_seg = nn.Conv2d(channels, num_classes, kernel_size=1)
+
         if dropout_ratio > 0:
             self.dropout = nn.Dropout2d(dropout_ratio)
         else:
@@ -130,8 +137,9 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             self.in_channels = in_channels
 
     def init_weights(self):
-        """Initialize weights of classification layer."""
-        normal_init(self.conv_seg, mean=0, std=0.01)
+        if hasattr(self, 'conv_seg'):
+            """Initialize weights of classification layer."""
+            normal_init(self.conv_seg, mean=0, std=0.01)
 
     def _transform_inputs(self, inputs):
         """Transform inputs for decoder.
@@ -203,11 +211,16 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         """
         return self.forward(inputs)
 
+    # dupsample is completed here
     def cls_seg(self, feat):
         """Classify each pixel."""
         if self.dropout is not None:
             feat = self.dropout(feat)
-        output = self.conv_seg(feat)
+
+        if self.dupsample is not None:
+            output = self.dupsample(feat)
+        else:
+            output = self.conv_seg(feat)
         return output
 
     @force_fp32(apply_to=('seg_logit', ))
