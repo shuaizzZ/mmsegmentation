@@ -59,6 +59,7 @@ class MultiScaleFlipAug(object):
         self.transforms = Compose(transforms)
         if img_ratios is not None:
             # mode 1: given a scale and a range of image ratio
+            # 根据scale和ratio计算多尺度
             img_ratios = img_ratios if isinstance(img_ratios,
                                                   list) else [img_ratios]
             assert mmcv.is_list_of(img_ratios, float)
@@ -68,6 +69,7 @@ class MultiScaleFlipAug(object):
                               for ratio in img_ratios]
         else:
             # mode 2: given multiple scales
+            # 给定多尺度或者单尺度
             self.img_scale = img_scale if isinstance(img_scale,
                                                      list) else [img_scale]
         assert mmcv.is_list_of(self.img_scale, tuple)
@@ -76,10 +78,12 @@ class MultiScaleFlipAug(object):
             flip_direction, list) else [flip_direction]
         assert mmcv.is_list_of(self.flip_direction, str)
         if not self.flip and self.flip_direction != ['horizontal']:
+            # Default: "horizontal"
             warnings.warn(
                 'flip_direction has no effect when flip is set to False')
         if (self.flip
                 and not any([t['type'] == 'RandomFlip' for t in transforms])):
+            # any: all false, return false; one true, return true.
             warnings.warn(
                 'flip has no effect when RandomFlip is not in transforms')
 
