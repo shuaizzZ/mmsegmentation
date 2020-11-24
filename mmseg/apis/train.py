@@ -9,7 +9,7 @@ from mmcv.runner import build_optimizer, build_runner
 from mmseg.core import DistEvalHook, EvalHook
 from mmseg.core import UpsampleHook
 from mmseg.datasets import build_dataloader, build_dataset
-from mmseg.utils import get_root_logger
+from mmseg.utils import get_root_logger, CheckRunstateHook
 
 
 def set_random_seed(seed, deterministic=False):
@@ -37,7 +37,8 @@ def train_segmentor(model,
                     distributed=False,
                     validate=False,
                     timestamp=None,
-                    meta=None):
+                    meta=None,
+                    runstate=np.array([1])):
     """Launch segmentor training."""
     logger = get_root_logger(cfg.log_level)
 
@@ -115,7 +116,10 @@ def train_segmentor(model,
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
 
+    ## du blocks
     if cfg.resume_from is None and cfg.load_from is None:
-        runner.register_hook(UpsampleHook(model, cfg, distributed))
+        runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
+    # check runstate
+    runner.register_hook(CheckRunstateHook(runstate))
 
     runner.run(data_loaders, cfg.workflow)
