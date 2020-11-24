@@ -1,14 +1,18 @@
+
+import numpy as np
+from apex import amp
+from tqdm import tqdm
 import os.path as osp
+
+import torch
+import torch.nn as nn
+import torch.distributed as dist
+from torch.utils.data import DataLoader
+
 from mmcv.runner import Hook, build_optimizer
 from mmcv.runner.iter_based_runner import IterLoader
-from torch.utils.data import DataLoader
-from mmseg.models.utils import DUpsamplingBlock
-from apex import amp
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-import torch.distributed as dist
-from tqdm import tqdm
-import torch.nn as nn
-import torch
+from mmseg.models.utils import DUpsamplingBlock
 
 
 # 以后放工具类中
@@ -26,11 +30,12 @@ class UpsampleHook(Hook):
         interval (int): Evaluation interval (by epochs). Default: 1.
     """
 
-    def __init__(self, model, cfg, distributed=False):
+    def __init__(self, model, cfg, distributed=False, runstate=np.array([1])):
         from mmseg.datasets import build_dataloader, build_dataset
         self.upsampleblock_list = self._find_upsampleblocks(model)
         self.upsampleblock_infos = []
         self.distributed = distributed
+        self.runstate = runstate
 
         if 0 == len(self.upsampleblock_list):
             return
@@ -106,6 +111,10 @@ class UpsampleHook(Hook):
         torch.cuda.empty_cache()
 
     def _run_one_batch(self, data_batch):
+        # check runstate
+        if self.runstate[0] == 0:
+            sys.exit(0)
+
         for upsampleblock_info in self.upsampleblock_infos:
             upsampleblock_info['optimizer'].zero_grad()
             target = data_batch['gt_semantic_seg'].data[0]
@@ -170,9 +179,3 @@ class UpsampleHook(Hook):
             self._run_iters(runner)
 
         self._destroy_resources()
-
-
-
-
-
-
