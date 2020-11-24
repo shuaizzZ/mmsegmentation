@@ -47,7 +47,7 @@ def parse_args():
         help='number of gpus to use (only applicable to non-distributed training)')
     group_gpus.add_argument(
         '--gpu-ids',
-        default=[0],
+        default=[0,1,2,3],
         type=int,
         nargs='+',
         help='ids of gpus to use (only applicable to non-distributed training)')
@@ -68,7 +68,7 @@ def parse_args():
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
-        default='none',
+        default='pytorch',
         help='job launcher')
     parser.add_argument(
         '--local_rank',
@@ -81,7 +81,7 @@ def parse_args():
 
     return args
 
-a=1
+
 def main():
     args = parse_args()
 
@@ -157,7 +157,7 @@ def main():
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
         val_dataset = copy.deepcopy(cfg.data.val)
-        val_dataset.pipeline = cfg.data.val.pipeline
+        val_dataset.pipeline = cfg.data.train.pipeline
         datasets.append(build_dataset(val_dataset))
     if cfg.checkpoint_config is not None:
         # save mmseg version, config file content and class names in
