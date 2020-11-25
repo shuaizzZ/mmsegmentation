@@ -2,11 +2,12 @@ import os.path as osp
 import pickle
 import shutil
 import tempfile
+import numpy as np
 
 import mmcv
 import torch
 import torch.distributed as dist
-from mmcv.image import tensor2imgs
+from mmcv.image import tensor2imgs, imwrite
 from mmcv.runner import get_dist_info
 
 
@@ -29,6 +30,7 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        print(data['filename'])
         with torch.no_grad():
             result = model(return_loss=False, **data)
         if isinstance(result, list):
@@ -65,6 +67,42 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
         for _ in range(batch_size):
             prog_bar.update()
     return results
+
+
+def mv_single_gpu_test(model, data_loader, out_dir=None):
+    """Test with single GPU.
+
+    Args:
+        model (nn.Module): Model to be tested.
+        data_loader (nn.Dataloader): Pytorch data loader.
+        show (bool): Whether show results during infernece. Default: False.
+        out_dir (str, optional): If specified, the results will be dumped
+        into the directory to save output results.
+
+    Returns:
+        list: The prediction results.
+    """
+
+    model.eval()
+    dataset = data_loader.dataset
+    prog_bar = mmcv.ProgressBar(len(dataset))
+    import cv2
+    for i, data in enumerate(data_loader):
+        with torch.no_grad():
+            result = model(return_loss=False, return_logit=True, **data)
+        if out_dir:
+            img_metas = data['img_metas'][0].data[0]
+            img_name = osp.basename(img_metas[0]['filename'])
+            base_name = img_name.split('.')[0]
+            for i in range(1, result.size(1)):
+                probability = np.uint8(result[0, i, :, :].cpu() * 255)
+                out_path = osp.join(out_dir, '{}_{}.png'.format(base_name, i))
+                imwrite(probability, out_path)
+                # cv2.imwrite(out_path, probability)
+
+        batch_size = data['img'][0].size(0)
+        for _ in range(batch_size):
+            prog_bar.update()
 
 
 def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):

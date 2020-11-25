@@ -106,10 +106,10 @@ class manuvision():
 
     def train_py(self, runstate):
         # manuvision config
-        mv_config_file = "../../configs/manuvision_train.yaml"
+        mv_config_file = "../../configs/ainnovision_train.yaml"
         mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
         if not os.path.exists(mv_config_path):
-            mv_config_file = "manuvision_train.yaml"
+            mv_config_file = "ainnovision_train.yaml"
             mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
@@ -201,8 +201,17 @@ class manuvision():
             meta=meta,
             runstate=runstate)
 
+    def inference(self, runstate):
+        try:
+            self.inference_py(runstate)
+        except Exception as ex:
+            ex_type, ex_val, ex_stack = sys.exc_info()
+            print('ex_type:',ex_type)
+            print('ex_val:',ex_val)
+            for stack in traceback.extract_tb(ex_stack):
+                print(stack)
 
-    def inference(self, run_state):
+    def inference_py(self, run_state):
         args = parse_args()
 
         assert args.out or args.eval or args.format_only or args.show \
