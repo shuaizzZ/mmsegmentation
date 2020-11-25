@@ -16,4 +16,4 @@ load_from = None
 resume_from = None
 # workflow = [('train', 1), ('val', 1)]
 workflow = [('train', 1)]
-cudnn_benchmark = True
+cudnn_benchmark = False

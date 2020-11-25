@@ -13,12 +13,14 @@ try:
     # from mmseg.mv_yaml.mv_test_default import _C as mvcfg_test
 
     import mmcv
-    from mmcv.runner import init_dist
+    from mmcv.runner import init_dist, load_checkpoint
     from mmcv.utils import Config, DictAction, get_git_hash
+    from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
     from mmseg import __version__
-    from mmseg.apis import set_random_seed, train_segmentor, train
-    from mmseg.datasets import build_dataset
+    from mmseg.apis import (set_random_seed, train_segmentor, train,
+                            multi_gpu_test, single_gpu_test, mv_single_gpu_test)
+    from mmseg.datasets import build_dataset, build_dataloader
     from mmseg.models import build_segmentor
     from mmseg.utils import collect_env, get_root_logger
 except Exception as ex:
@@ -90,7 +92,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     return mmcfg
 
 
-class manuvision():
+class ainnovision():
     def init(self):
         pass
 
@@ -212,41 +214,35 @@ class manuvision():
                 print(stack)
 
     def inference_py(self, run_state):
-        args = parse_args()
-
-        assert args.out or args.eval or args.format_only or args.show \
-               or args.show_dir, \
-            ('Please specify at least one operation (save/eval/format/show the '
-             'results / save the results) with the argument "--out", "--eval"'
-             ', "--format-only", "--show" or "--show-dir"')
-
-        if args.eval and args.format_only:
-            raise ValueError('--eval and --format_only cannot be both specified')
-
-        if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
-            raise ValueError('The output file must be a pkl file.')
-
-        cfg = mmcv.Config.fromfile(args.config)
-        if args.options is not None:
-            cfg.merge_from_dict(args.options)
+        # manuvision config
+        mv_config_file = "../../configs/ainnovision_train.yaml"
+        mv_config_path = osp.join(osp.split(__file__)[0], mv_config_file)
+        if not osp.exists(mv_config_path):
+            mv_config_file = "ainnovision_train.yaml"
+            mv_config_path = osp.join(osp.split(__file__)[0], mv_config_file)
+        mvcfg = Config.fromfile(mv_config_path)
+        # mmseg config
+        mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+        mmcfg = Config.fromfile(mm_config_path)
+        cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
+        work_dir = '/root/public02/manuag/zhangshuai/manuvision-mmsegmentation/tools/yantai-4'
+        model_path = osp.join(work_dir, 'latest.pth')
+        out_dir = osp.join(work_dir, 'test')
+        mmcv.mkdir_or_exist(out_dir)
+        # model_path = os.path.join(cfg.data_root, 'models', 'best_model.pth.tar')
         # set cudnn_benchmark
         if cfg.get('cudnn_benchmark', False):
             torch.backends.cudnn.benchmark = True
-        if args.aug_test:
-            # hard code index
-            cfg.data.test.pipeline[1].img_ratios = [
-                0.5, 0.75, 1.0, 1.25, 1.5, 1.75
-            ]
-            cfg.data.test.pipeline[1].flip = True
+
         cfg.model.pretrained = None
         cfg.data.test.test_mode = True
 
         # init distributed env first, since logger depends on the dist info.
-        if args.launcher == 'none':
+        if cfg.get('launcher', 'none') == 'none' or len(cfg.gpu_ids) == 1:
             distributed = False
         else:
             distributed = True
-            init_dist(args.launcher, **cfg.dist_params)
+            init_dist(cfg.launcher, **cfg.dist_params)
 
         # build the dataloader
         # TODO: support multiple images per gpu (only minor changes are needed)
@@ -254,37 +250,20 @@ class manuvision():
         data_loader = build_dataloader(
             dataset,
             samples_per_gpu=1,
-            workers_per_gpu=cfg.data.workers_per_gpu,
+            workers_per_gpu=0,
             dist=distributed,
             shuffle=False)
 
         # build the model and load checkpoint
         model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-        checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+        checkpoint = load_checkpoint(model, model_path, map_location='cpu')
         model.CLASSES = checkpoint['meta']['CLASSES']
         model.PALETTE = checkpoint['meta']['PALETTE']
 
         if not distributed:
             model = MMDataParallel(model, device_ids=[0])
-            outputs = single_gpu_test(model, data_loader, args.show, args.show_dir)
-        else:
-            model = MMDistributedDataParallel(
-                model.cuda(),
-                device_ids=[torch.cuda.current_device()],
-                broadcast_buffers=False)
-            outputs = multi_gpu_test(model, data_loader, args.tmpdir,
-                                     args.gpu_collect)
+            mv_single_gpu_test(model, data_loader, out_dir=out_dir)
 
-        rank, _ = get_dist_info()
-        if rank == 0:
-            if args.out:
-                print(f'\nwriting results to {args.out}')
-                mmcv.dump(outputs, args.out)
-            kwargs = {} if args.eval_options is None else args.eval_options
-            if args.format_only:
-                dataset.format_results(outputs, **kwargs)
-            if args.eval:
-                dataset.evaluate(outputs, args.eval, **kwargs)
 
     def convert(self, run_state, mode=0):
         pass
@@ -300,8 +279,8 @@ if __name__ == "__main__":
     import numpy as np
     runstate = np.array([1])
 
-    mv = manuvision()
+    mv = ainnovision()
     mv.init()
-    mv.train_py(runstate)
-    # mv.inference(run_state)
-    # mv.convert(run_state)
+    # mv.train_py(runstate)
+    mv.inference_py(runstate)
+    # mv.convert(runstate)
