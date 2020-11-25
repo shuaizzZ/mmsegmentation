@@ -39,28 +39,28 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     ## model
 
     ## dataset
-    mmcfg.dataset_type = mvcfg.dataset.type
-    mmcfg.data_root = mvcfg.dataset.data_root
-    mmcfg.dataset = mvcfg.dataset.dataset
-    mmcfg.classes = mvcfg.dataset.classes
+    mmcfg.dataset_type = mvcfg.DATASETS.TYPE
+    mmcfg.data_root = mvcfg.DATASETS.ROOT
+    mmcfg.dataset = mvcfg.DATASETS.DATASET
+    mmcfg.classes = mvcfg.DATASETS.CLASSES
     for mode in ['train', 'val', 'test']:
-        for para in ['type', 'data_root', 'dataset', 'classes']:
+        modify_if_exist(mmcfg._cfg_dict['data'][mode], ['type'],
+                        mmcfg._cfg_dict, ['dataset_type'])
+        for para in ['data_root', 'dataset', 'classes']:
             modify_if_exist(mmcfg._cfg_dict['data'][mode], [para],
-                            mvcfg._cfg_dict['dataset'], [para])
+                            mmcfg._cfg_dict, [para])
 
     # pipeline train
-    mmcfg.labels = mvcfg.dataset.labels
-    mmcfg.crop_size = mvcfg.dataset.crop_size
-    mmcfg.size = mvcfg.dataset.size
+    mmcfg.labels = mvcfg.DATASETS.LABELS
+    mmcfg.crop_size = mvcfg.DATASETS.AUGMENT.CROP_SIZE
     option_para = {'Relabel': ['labels'],
-                   'RandomCrop': ['crop_size'],
-                   'Pad': ['size']}
+                   'RandomCrop': ['crop_size'],}
     for i, trans_dict in enumerate(mmcfg.train_pipeline):
         trans_type = trans_dict.type
         if trans_type in option_para.keys():
             modify_if_exist(mmcfg._cfg_dict['train_pipeline'][i],
                             option_para[trans_type],
-                            mvcfg._cfg_dict['dataset'],
+                            mmcfg._cfg_dict,
                             option_para[trans_type])
     mmcfg.data.train.pipeline = mmcfg.train_pipeline
     # pipeline val
@@ -71,23 +71,21 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
         if trans_type in option_para.keys():
             modify_if_exist(mmcfg._cfg_dict['val_pipeline'][i],
                             option_para[trans_type],
-                            mvcfg._cfg_dict['dataset'],
+                            mmcfg._cfg_dict,
                             option_para[trans_type])
     mmcfg.data.val.pipeline = mmcfg.val_pipeline
 
-    mmcfg.data.samples_per_gpu = mvcfg.dataset.samples_per_gpu
-    mmcfg.data.workers_per_gpu = mvcfg.dataset.workers_per_gpu
+    mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
+    mmcfg.data.workers_per_gpu = 0
 
     ## schedule
-
+    # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
+    # mmcfg.optimizer.momentum = mvcfg.SOLVER.OPT.MOMENTUM
+    # mmcfg.optimizer.weight_decay = mvcfg.SOLVER.OPT.WEIGHT_DECAY
     ## runtime
-    for para in ['seed', 'deterministic', 'cudnn_benchmark',
-                 'gpu_ids', 'load_from', 'work_dir']:
-        modify_if_exist(mmcfg._cfg_dict, [para],
-                        mvcfg._cfg_dict['runtime'], [para])
-
-    ## others
-
+    if mvcfg.TRAIN.FT.RESUME:
+        mmcfg.load_from = mvcfg.TRAIN.FT.CHECKPATH
+    mmcfg.work_dir = mvcfg.TRAIN.CHECKNAME
 
     return mmcfg
 
@@ -205,7 +203,79 @@ class manuvision():
 
 
     def inference(self, run_state):
-        pass
+        args = parse_args()
+
+        assert args.out or args.eval or args.format_only or args.show \
+               or args.show_dir, \
+            ('Please specify at least one operation (save/eval/format/show the '
+             'results / save the results) with the argument "--out", "--eval"'
+             ', "--format-only", "--show" or "--show-dir"')
+
+        if args.eval and args.format_only:
+            raise ValueError('--eval and --format_only cannot be both specified')
+
+        if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
+            raise ValueError('The output file must be a pkl file.')
+
+        cfg = mmcv.Config.fromfile(args.config)
+        if args.options is not None:
+            cfg.merge_from_dict(args.options)
+        # set cudnn_benchmark
+        if cfg.get('cudnn_benchmark', False):
+            torch.backends.cudnn.benchmark = True
+        if args.aug_test:
+            # hard code index
+            cfg.data.test.pipeline[1].img_ratios = [
+                0.5, 0.75, 1.0, 1.25, 1.5, 1.75
+            ]
+            cfg.data.test.pipeline[1].flip = True
+        cfg.model.pretrained = None
+        cfg.data.test.test_mode = True
+
+        # init distributed env first, since logger depends on the dist info.
+        if args.launcher == 'none':
+            distributed = False
+        else:
+            distributed = True
+            init_dist(args.launcher, **cfg.dist_params)
+
+        # build the dataloader
+        # TODO: support multiple images per gpu (only minor changes are needed)
+        dataset = build_dataset(cfg.data.test)
+        data_loader = build_dataloader(
+            dataset,
+            samples_per_gpu=1,
+            workers_per_gpu=cfg.data.workers_per_gpu,
+            dist=distributed,
+            shuffle=False)
+
+        # build the model and load checkpoint
+        model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+        checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
+        model.CLASSES = checkpoint['meta']['CLASSES']
+        model.PALETTE = checkpoint['meta']['PALETTE']
+
+        if not distributed:
+            model = MMDataParallel(model, device_ids=[0])
+            outputs = single_gpu_test(model, data_loader, args.show, args.show_dir)
+        else:
+            model = MMDistributedDataParallel(
+                model.cuda(),
+                device_ids=[torch.cuda.current_device()],
+                broadcast_buffers=False)
+            outputs = multi_gpu_test(model, data_loader, args.tmpdir,
+                                     args.gpu_collect)
+
+        rank, _ = get_dist_info()
+        if rank == 0:
+            if args.out:
+                print(f'\nwriting results to {args.out}')
+                mmcv.dump(outputs, args.out)
+            kwargs = {} if args.eval_options is None else args.eval_options
+            if args.format_only:
+                dataset.format_results(outputs, **kwargs)
+            if args.eval:
+                dataset.evaluate(outputs, args.eval, **kwargs)
 
     def convert(self, run_state, mode=0):
         pass
