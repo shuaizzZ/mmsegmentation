@@ -11,6 +11,7 @@ from .stare import STAREDataset
 from .voc import PascalVOCDataset
 
 from .yantai import YantaiDataset
+from .ainno import AinnoDataset
 
 __all__ = [
     'CustomDataset', 'build_dataloader', 'ConcatDataset', 'RepeatDataset',
@@ -18,5 +19,5 @@ __all__ = [
     'PascalVOCDataset', 'ADE20KDataset', 'PascalContextDataset',
     'ChaseDB1Dataset', 'DRIVEDataset', 'HRFDataset', 'STAREDataset',
 
-    'YantaiDataset',
+    'YantaiDataset', 'AinnoDataset',
 ]
