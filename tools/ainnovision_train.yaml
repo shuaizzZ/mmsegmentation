@@ -17,8 +17,9 @@ MODEL:
 # Dataset
 # -----------------------------------------------------------------------------
 DATASETS:
-    ROOT: '/opt/data/public02/manuag/zhangshuai/data'
-    TYPE: "YantaiDataset"   ## example
+#    ROOT: '/opt/data/public02/manuag/zhangshuai/data'
+    ROOT: '/root/public02/manuag/zhangshuai/data/cicai_data/cicai-hangzhou'
+    TYPE: "AinnoDataset"   ## YantaiDataset
     DATASET: "yantai-12_v2345_unq_1008"
     CLASSES: ['background', 'abnormal'] # liewen , 'quekuai', 'zhazhi', 'pingmianbuping', 'loumo'
     LABELS: [0, 1]

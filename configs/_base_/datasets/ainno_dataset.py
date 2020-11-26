@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'AinnoDataset'
-data_root = '/opt/data/public02/manuag/zhangshuai/data'
+data_root = '/root/public02/manuag/zhangshuai/data/cicai_data/cicai-hangzhou'
 dataset = "yantai-12_v2345_unq_1008" # 12_v234_all_1c  12_v234_unq_1c
 
 classes = ['background', '1diaojiao', '2liewen', '3kongdong']

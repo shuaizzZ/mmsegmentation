@@ -1,5 +1,5 @@
 # dataset settings
-dataset_type = 'YantaiDataset'
+dataset_type = 'AinnoDataset' # YantaiDataset
 data_root = '/opt/data/public02/manuag/zhangshuai/data'
 dataset = "yantai-12_v2345_unq_1008" # 12_v234_all_1c  12_v234_unq_1c
 

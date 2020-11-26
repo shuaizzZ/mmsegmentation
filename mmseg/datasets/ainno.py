@@ -52,6 +52,7 @@ class AinnoDataset(Dataset):
 
         self.img_infos = []
 
+        # _split_file = osp.join(self.data_root, 'yantai_datasets', dataset, '{}.csv'.format(self.split))
         _split_file = osp.join(self.data_root, '{}.csv'.format(self.split))
         if not osp.isfile(_split_file):
             raise ValueError('Unknown dataset _split_file: {}'.format(_split_file))
@@ -61,7 +62,7 @@ class AinnoDataset(Dataset):
         print(_split_file)
         for line in tqdm(lines, desc=self.split):
             ##-- 读取_image, _mask --##
-            _image, _mask = line.rstrip('\n').split(',')
+            _image, _mask = line.rstrip('\n').split(',')[:2]
             _image = osp.join(self.data_root, _image)
             _mask = osp.join(self.data_root, _mask)
             if not osp.isfile(_image):

@@ -281,6 +281,6 @@ if __name__ == "__main__":
 
     mv = ainnovision()
     mv.init()
-    # mv.train_py(runstate)
-    mv.inference_py(runstate)
+    mv.train_py(runstate)
+    # mv.inference_py(runstate)
     # mv.convert(runstate)
