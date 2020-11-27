@@ -5,6 +5,7 @@ from mmcv.cnn import ConvModule
 from mmseg.ops import resize
 from ..builder import HEADS
 from .decode_head import BaseDecodeHead
+from ..utils import Mix2Pooling
 
 
 class PPM(nn.ModuleList):
@@ -22,7 +23,7 @@ class PPM(nn.ModuleList):
     """
 
     def __init__(self, pool_scales, in_channels, channels, conv_cfg, norm_cfg,
-                 act_cfg, align_corners):
+                 act_cfg, align_corners, pooling='avg'):
         super(PPM, self).__init__()
         self.pool_scales = pool_scales
         self.align_corners = align_corners
@@ -31,10 +32,14 @@ class PPM(nn.ModuleList):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
+        if pooling == 'avg':
+            self.pooling = nn.AdaptiveAvgPool2d
+        elif pooling == 'mix':
+            self.pooling = Mix2Pooling
         for pool_scale in pool_scales:
             self.append(
                 nn.Sequential(
-                    nn.AdaptiveAvgPool2d(pool_scale),
+                    self.pooling(pool_scale),
                     ConvModule(
                         self.in_channels,
                         self.channels,
@@ -80,7 +85,8 @@ class PSPHead(BaseDecodeHead):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg,
-            align_corners=self.align_corners)
+            align_corners=self.align_corners,
+            pooling=self.pooling)
         self.bottleneck = ConvModule(
             self.in_channels + len(pool_scales) * self.channels,
             self.channels,
