@@ -68,7 +68,7 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
     return results
 
 
-def mv_single_gpu_test(model, data_loader, out_dir=None):
+def mv_single_gpu_test(model, data_loader, runstate, out_dir=None):
     """Test with single GPU.
 
     Args:
@@ -87,6 +87,8 @@ def mv_single_gpu_test(model, data_loader, out_dir=None):
     prog_bar = mmcv.ProgressBar(len(dataset))
     import cv2
     for i, data in enumerate(data_loader):
+        if runstate[0] == 0:
+            sys.exit(0)
         with torch.no_grad():
             result = model(return_loss=False, return_logit=True, **data)
         if out_dir:
