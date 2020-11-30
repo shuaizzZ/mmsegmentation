@@ -19,7 +19,8 @@ try:
 
     from mmseg import __version__
     from mmseg.apis import (set_random_seed, train_segmentor, train,
-                            multi_gpu_test, single_gpu_test, mv_single_gpu_test)
+                            mv_single_gpu_test,
+                            _convert_batchnorm, _demo_mm_inputs, pytorch2onnx)
     from mmseg.datasets import build_dataset, build_dataloader
     from mmseg.models import build_segmentor
     from mmseg.utils import collect_env, get_root_logger
@@ -39,6 +40,10 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             if mvpara.get(mvfield, None):
                 mmpara[mmfield] = mvpara.get(mvfield)
     ## model
+    mmcfg.norm_cfg.type = mvcfg.MODEL.BN
+    for module, config in mmcfg.model.items():
+        if isinstance(config, dict) and 'norm_cfg' in config.keys():
+            mmcfg._cfg_dict['model'][module]['norm_cfg']['type'] = mmcfg.norm_cfg.type
 
     ## dataset
     mmcfg.dataset_type = mvcfg.DATASETS.TYPE
@@ -108,15 +113,14 @@ class ainnovision():
 
     def train_py(self, runstate):
         # manuvision config
-        mv_config_file = "../../configs/ainnovision_train.yaml"
+        mv_config_file = "train.yaml"
         mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
-        if not os.path.exists(mv_config_path):
-            mv_config_file = "ainnovision_train.yaml"
-            mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../work_dir/2020_1029/pspnet_r50-d8_512x512_80k_ade20k.py'
-        mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+        # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+        mm_config_file = "mm_train.py"
+        mm_config_path = os.path.join(os.path.split(__file__)[0], mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
@@ -213,12 +217,12 @@ class ainnovision():
             for stack in traceback.extract_tb(ex_stack):
                 print(stack)
 
-    def inference_py(self, run_state):
+    def inference_py(self, runstate):
         # manuvision config
-        mv_config_file = "../../configs/ainnovision_train.yaml"
+        mv_config_file = "../../configs/train.yaml"
         mv_config_path = osp.join(osp.split(__file__)[0], mv_config_file)
         if not osp.exists(mv_config_path):
-            mv_config_file = "ainnovision_train.yaml"
+            mv_config_file = "train.yaml"
             mv_config_path = osp.join(osp.split(__file__)[0], mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
@@ -262,11 +266,40 @@ class ainnovision():
 
         if not distributed:
             model = MMDataParallel(model, device_ids=[0])
-            mv_single_gpu_test(model, data_loader, out_dir=out_dir)
+            mv_single_gpu_test(model, data_loader, runstate=runstate, out_dir=out_dir)
 
 
     def convert(self, run_state, mode=0):
-        pass
+        if len(args.shape) == 1:
+            input_shape = (1, 3, args.shape[0], args.shape[0])
+        elif len(args.shape) == 2:
+            input_shape = (
+                              1,
+                              3,
+                          ) + tuple(args.shape)
+        else:
+            raise ValueError('invalid input shape')
+
+        cfg = mmcv.Config.fromfile(args.config)
+        cfg.model.pretrained = None
+
+        # build the model and load checkpoint
+        segmentor = build_segmentor(
+            cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+        # convert SyncBN to BN
+        segmentor = _convert_batchnorm(segmentor)
+
+        if args.checkpoint:
+            load_checkpoint(segmentor, args.checkpoint, map_location='cpu')
+
+        # conver model to onnx file
+        pytorch2onnx(
+            segmentor,
+            input_shape,
+            opset_version=args.opset_version,
+            show=args.show,
+            output_file=args.output_file,
+            verify=args.verify)
 
     def uninit(self):
         print("python ainnovision uninit")

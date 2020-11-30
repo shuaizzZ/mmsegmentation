@@ -25,7 +25,7 @@ def parse_args():
         help='train config file path')
     parser.add_argument(
         '--work-dir',
-        default='../work_dir/2020_1029/',
+        default='../work_dir/base_1128_dup2p/',
         help='the dir to save logs and models')
     parser.add_argument(
         '--load-from',

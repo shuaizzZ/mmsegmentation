@@ -11,5 +11,5 @@ lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
 # runtime settings
 # runner = dict(type='IterBasedRunner', max_iters=8000)
 runner = dict(type='EpochBasedRunner', max_epochs=50)
-checkpoint_config = dict(by_epoch=True, interval=1)
+checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=10)
 evaluation = dict(interval=1, metric='mIoU')

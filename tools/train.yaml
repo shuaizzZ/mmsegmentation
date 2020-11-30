@@ -7,6 +7,7 @@ MODEL:
     PRETRAIN_BACKBONE: True
     PRETRAINED_DIR: 'encoding/pretrained_models'
 
+    BN: "BN"
     DU_SCALE: 8
     SPP_SIZE: [2, 4, 8, 16] # [1, 2, 3, 6, 12, 24] [1, 2, 4, 8, 16, 32]
     DROPOUT2d: 0.5 # 0.1
@@ -19,6 +20,7 @@ MODEL:
 DATASETS:
 #    ROOT: '/opt/data/public02/manuag/zhangshuai/data'
     ROOT: '/root/public02/manuag/zhangshuai/data/cicai_data/cicai-hangzhou'
+#    ROOT: 'D:\data\cicai_data\cicai-hangzhou'
     TYPE: "AinnoDataset"   ## YantaiDataset
     DATASET: "yantai-12_v2345_unq_1008"
     CLASSES: ['background', 'abnormal'] # liewen , 'quekuai', 'zhazhi', 'pingmianbuping', 'loumo'
@@ -40,7 +42,7 @@ DATASETS:
     AUGMENT:
         TRANSPOSE: [0,1,2,3,4,5,6]
         # FLIP_LEFT_RIGHT, FLIP_TOP_BOTTOM, ROTATE_90, ROTATE_180, ROTATE_270, TRANSPOSE, TRANSVERSE ==> 0~6
-        CROP_SIZE: [512, 768]
+        CROP_SIZE: [512, 512]
         RESIZE_MODE: 1
         RESIZE_RANGE_H: [0.7, 1.4]
         RESIZE_RANGE_W: [0.7, 1.4]
@@ -131,7 +133,7 @@ TRAIN:
         PI: 0.01
     START_EPOCH: 1
     END_EPOCH: 50
-    BATCH_SIZE: 4
+    BATCH_SIZE: 2
 
     AMP: True
     ACCUMULATION_STEPS: 1

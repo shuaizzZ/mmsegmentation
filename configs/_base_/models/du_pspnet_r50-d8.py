@@ -27,6 +27,7 @@ model = dict(
         dupsample=dict(
             scale=8
         ),
+        pooling='mix',
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     auxiliary_head=dict(
