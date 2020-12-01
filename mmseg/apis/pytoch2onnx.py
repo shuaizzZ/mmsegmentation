@@ -3,7 +3,7 @@ from functools import partial
 
 import mmcv
 import numpy as np
-import onnxruntime as rt
+# import onnxruntime as rt
 import torch
 import torch._C
 import torch.serialization
@@ -119,30 +119,30 @@ def pytorch2onnx(model,
         print(f'Successfully exported ONNX model: {output_file}')
     model.forward = origin_forward
 
-    if verify:
-        # check by onnx
-        import onnx
-        onnx_model = onnx.load(output_file)
-        onnx.checker.check_model(onnx_model)
-
-        # check the numerical value
-        # get pytorch output
-        pytorch_result = model(img_list, img_meta_list, return_loss=False)[0]
-
-        # get onnx output
-        input_all = [node.name for node in onnx_model.graph.input]
-        input_initializer = [
-            node.name for node in onnx_model.graph.initializer
-        ]
-        net_feed_input = list(set(input_all) - set(input_initializer))
-        assert (len(net_feed_input) == 1)
-        sess = rt.InferenceSession(output_file)
-        onnx_result = sess.run(
-            None, {net_feed_input[0]: img_list[0].detach().numpy()})[0]
-        if not np.allclose(pytorch_result, onnx_result):
-            raise ValueError(
-                'The outputs are different between Pytorch and ONNX')
-        print('The outputs are same between Pytorch and ONNX')
+    # if verify:
+    #     # check by onnx
+    #     import onnx
+    #     onnx_model = onnx.load(output_file)
+    #     onnx.checker.check_model(onnx_model)
+    #
+    #     # check the numerical value
+    #     # get pytorch output
+    #     pytorch_result = model(img_list, img_meta_list, return_loss=False)[0]
+    #
+    #     # get onnx output
+    #     input_all = [node.name for node in onnx_model.graph.input]
+    #     input_initializer = [
+    #         node.name for node in onnx_model.graph.initializer
+    #     ]
+    #     net_feed_input = list(set(input_all) - set(input_initializer))
+    #     assert (len(net_feed_input) == 1)
+    #     sess = rt.InferenceSession(output_file)
+    #     onnx_result = sess.run(
+    #         None, {net_feed_input[0]: img_list[0].detach().numpy()})[0]
+    #     if not np.allclose(pytorch_result, onnx_result):
+    #         raise ValueError(
+    #             'The outputs are different between Pytorch and ONNX')
+    #     print('The outputs are same between Pytorch and ONNX')
 
 
 def parse_args():
