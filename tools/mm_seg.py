@@ -43,7 +43,7 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)))
 train_cfg = dict()
 test_cfg = dict(mode='whole')
-dataset_type = 'YantaiDataset'
+dataset_type = 'AinnoDataset'
 data_root = '/opt/data/public02/manuag/zhangshuai/data'
 dataset = 'yantai-12_v2345_unq_1008'
 classes = ['background', '1diaojiao', '2liewen', '3kongdong']

@@ -46,9 +46,8 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             mmcfg._cfg_dict['model'][module]['norm_cfg']['type'] = mmcfg.norm_cfg.type
 
     ## dataset
-    mmcfg.dataset_type = mvcfg.DATASETS.TYPE
+    # mmcfg.dataset_type = mvcfg.DATASETS.TYPE
     mmcfg.data_root = mvcfg.DATASETS.ROOT
-    mmcfg.dataset = mvcfg.DATASETS.DATASET
     mmcfg.classes = mvcfg.DATASETS.CLASSES
     for mode in ['train', 'val', 'test']:
         modify_if_exist(mmcfg._cfg_dict['data'][mode], ['type'],
