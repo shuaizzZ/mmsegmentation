@@ -1,15 +1,18 @@
+
 import random
 import warnings
-
 import numpy as np
+import os.path as osp
+
 import torch
+import mmcv
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import build_optimizer, build_runner
 
 from mmseg.core import DistEvalHook, EvalHook
 from mmseg.core import UpsampleHook
 from mmseg.datasets import build_dataloader, build_dataset
-from mmseg.utils import get_root_logger, CheckRunstateHook
+from mmseg.utils import get_root_logger
 
 
 def set_random_seed(seed, deterministic=False):
@@ -119,7 +122,108 @@ def train_segmentor(model,
     ## du blocks
     if cfg.resume_from is None and cfg.load_from is None:
         runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
-    # check runstate
+
+    runner.run(data_loaders, cfg.workflow)
+
+
+def trainer_segmentor(model,
+                    dataset,
+                    cfg,
+                    distributed=False,
+                    validate=False,
+                    timestamp=None,
+                    meta=None,
+                    runstate=np.array([1])):
+    """Launch segmentor training."""
+    from mmcv.runner import HOOKS
+    from mmseg.utils import CheckRunstateHook, TrainerLogHook, TrainerCheckpointHook
+
+    logger = get_root_logger(cfg.log_level)
+
+    # prepare data loaders
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
+    data_loaders = [
+        build_dataloader(
+            ds,
+            cfg.data.samples_per_gpu,
+            cfg.data.workers_per_gpu,
+            # cfg.gpus will be ignored if distributed
+            len(cfg.gpu_ids),
+            dist=distributed,
+            seed=cfg.seed,
+            drop_last=True) for ds in dataset
+    ]
+
+    # put model on gpus
+    if distributed:
+        find_unused_parameters = cfg.get('find_unused_parameters', False)
+        # Sets the `find_unused_parameters` parameter in
+        # torch.nn.parallel.DistributedDataParallel
+        model = MMDistributedDataParallel(
+            model.cuda(),
+            device_ids=[torch.cuda.current_device()],
+            broadcast_buffers=False,
+            find_unused_parameters=find_unused_parameters)
+    else:
+        model = MMDataParallel(
+            model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
+
+    # build runner
+    optimizer = build_optimizer(model, cfg.optimizer)
+
+    if cfg.get('runner') is None:
+        cfg.runner = {'type': 'IterBasedRunner', 'max_iters': cfg.total_iters}
+        warnings.warn(
+            'config is now expected to have a `runner` section, '
+            'please set `runner` in your config.', UserWarning)
+
+    runner = build_runner(
+        cfg.runner,
+        default_args=dict(
+            model=model,
+            batch_processor=None,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta))
+
+    # register hooks
+    checkpoint_config = cfg.checkpoint_config
+    checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
+    trainer_checkpoint_hook = mmcv.build_from_cfg(checkpoint_config, HOOKS)
+    runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
+                                   trainer_checkpoint_hook, cfg.log_config,
+                                   cfg.get('momentum_config', None))
+
+    # an ugly walkaround to make the .log and .log.json filenames the same
+    runner.timestamp = timestamp
+
+    # register eval hooks
+    if validate:
+        val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
+        val_dataloader = build_dataloader(
+            val_dataset,
+            samples_per_gpu=1,
+            workers_per_gpu=cfg.data.workers_per_gpu,
+            dist=distributed,
+            shuffle=False)
+        eval_cfg = cfg.get('evaluation', {})
+        eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
+        eval_hook = DistEvalHook if distributed else EvalHook
+        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+
+    if cfg.resume_from:
+        runner.resume(cfg.resume_from)
+    elif cfg.load_from:
+        runner.load_checkpoint(cfg.load_from)
+
+    ## du blocks
+    if cfg.resume_from is None and cfg.load_from is None:
+        runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
+    # register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
+    trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
+    runner.register_hook(TrainerLogHook(trainer_log_path))
+    # runner.register_hook(CheckpointHook(cfg.checkpoint_config))
 
     runner.run(data_loaders, cfg.workflow)

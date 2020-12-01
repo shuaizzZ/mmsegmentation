@@ -18,7 +18,7 @@ model = dict(
         in_channels=2048,
         in_index=3,
         channels=512,
-        pool_scales=(1, 2, 3, 6),
+        pool_scales=(2, 4, 8, 16),
         dropout_ratio=0.1,
         num_classes=4,
         norm_cfg=dict(type='BN', requires_grad=True),
@@ -183,7 +183,7 @@ log_config = dict(
     interval=1, hooks=[dict(type='TextLoggerHook', by_epoch=True)])
 seed = 4
 deterministic = None
-gpu_ids = [0, 1, 2, 3]
+gpu_ids = [0]
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 load_from = None
@@ -203,11 +203,11 @@ lr_config = dict(
     warmup_ratio=0.01,
     warmup_by_epoch=False)
 runner = dict(type='EpochBasedRunner', max_epochs=2400)
-checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=10)
+checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=1)
 evaluation = dict(interval=1, metric='mIoU')
 du_config = dict(
-    interval=200,
+    interval=100,
     optimizer=dict(type='SGD', lr=0.01),
-    total_runs=1000,
+    total_runs=100,
     by_epoch=False)
 work_dir = '../work_dir/base_1127_dup2p/'

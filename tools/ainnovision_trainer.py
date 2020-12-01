@@ -18,7 +18,7 @@ try:
     from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
     from mmseg import __version__
-    from mmseg.apis import (set_random_seed, train_segmentor, train,
+    from mmseg.apis import (set_random_seed, trainer_segmentor,
                             mv_single_gpu_test,
                             _convert_batchnorm, _demo_mm_inputs, pytorch2onnx)
     from mmseg.datasets import build_dataset, build_dataloader
@@ -92,14 +92,26 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     ## runtime
     if mvcfg.TRAIN.FT.RESUME:
         mmcfg.load_from = mvcfg.TRAIN.FT.CHECKPATH
-    mmcfg.work_dir = mvcfg.TRAIN.CHECKNAME
+    mmcfg.work_dir = osp.join(mmcfg.data_root, 'models')
 
     return mmcfg
 
+def merge_config():
+    mv_config_file = "ainnovision_train.yaml"
+    mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
+    mvcfg = Config.fromfile(mv_config_path)
+    # mmseg config
+    # mm_config_path = '../work_dir/2020_1029/pspnet_r50-d8_512x512_80k_ade20k.py'
+    # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+    mm_config_file = "mm_seg.py"
+    mm_config_path = os.path.join(os.path.split(__file__)[0], mm_config_file)
+    mmcfg = Config.fromfile(mm_config_path)
+    cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
 class ainnovision():
     def init(self):
-        pass
+        self.work_dir = os.path.split(__file__)[0]
+        print ("python ainnovision init")
 
     def train(self, runstate):
         try:
@@ -113,25 +125,19 @@ class ainnovision():
 
     def train_py(self, runstate):
         # manuvision config
-        mv_config_file = "train.yaml"
-        mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
+        mv_config_file = "ainnovision_train.yaml"
+        mv_config_path = os.path.join(self.work_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
-        # mm_config_path = '../work_dir/2020_1029/pspnet_r50-d8_512x512_80k_ade20k.py'
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
-        mm_config_file = "mm_train.py"
-        mm_config_path = os.path.join(os.path.split(__file__)[0], mm_config_file)
+        mm_config_file = "mm_seg.py"
+        mm_config_path = os.path.join(self.work_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
         # set cudnn_benchmark
         if cfg.get('cudnn_benchmark', False):
             torch.backends.cudnn.benchmark = True
-
-        if cfg.get('work_dir', None) is None:
-            # use config filename as default work_dir if cfg.work_dir is None
-            cfg.work_dir = osp.join('./work_dirs',
-                                    osp.splitext(osp.basename(mm_config_path))[0])
 
         # init distributed env first, since logger depends on the dist info.
         if cfg.get('launcher', 'none') == 'none' or len(cfg.gpu_ids) == 1:
@@ -146,7 +152,7 @@ class ainnovision():
         cfg.dump(osp.join(cfg.work_dir, osp.basename(mm_config_path)))
         # init the logger before other steps
         timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-        log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
+        log_file = osp.join(cfg.work_dir, 'train.log')
         logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
 
         # init the meta dict to record some important information such as
@@ -192,12 +198,12 @@ class ainnovision():
             # checkpoints as meta data
             cfg.checkpoint_config.meta = dict(
                 mmseg_version=f'{__version__}+{get_git_hash()[:7]}',
-                config=cfg.pretty_text,
+                config=cfg,
                 CLASSES=datasets[0].CLASSES,
                 PALETTE=datasets[0].PALETTE)
         # add an attribute for visualization convenience
         model.CLASSES = datasets[0].CLASSES
-        train_segmentor(
+        trainer_segmentor(
             model,
             datasets,
             cfg,
@@ -219,19 +225,19 @@ class ainnovision():
 
     def inference_py(self, runstate):
         # manuvision config
-        mv_config_file = "../../configs/train.yaml"
-        mv_config_path = osp.join(osp.split(__file__)[0], mv_config_file)
-        if not osp.exists(mv_config_path):
-            mv_config_file = "train.yaml"
-            mv_config_path = osp.join(osp.split(__file__)[0], mv_config_file)
+        mv_config_file = "ainnovision_train.yaml"
+        mv_config_path = os.path.join(self.work_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
-        mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+        # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+        mm_config_file = "mm_seg.py"
+        mm_config_path = os.path.join(self.work_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
-        work_dir = '/root/public02/manuag/zhangshuai/manuvision-mmsegmentation/tools/yantai-4'
-        model_path = osp.join(work_dir, 'latest.pth')
-        out_dir = osp.join(work_dir, 'test')
+
+        # work_dir = '/root/public02/manuag/zhangshuai/manuvision-mmsegmentation/tools/yantai-4'
+        model_path = osp.join(self.work_dir, 'latest.pth')
+        out_dir = osp.join(self.work_dir, 'test')
         mmcv.mkdir_or_exist(out_dir)
         # model_path = os.path.join(cfg.data_root, 'models', 'best_model.pth.tar')
         # set cudnn_benchmark
@@ -269,37 +275,29 @@ class ainnovision():
             mv_single_gpu_test(model, data_loader, runstate=runstate, out_dir=out_dir)
 
 
-    def convert(self, run_state, mode=0):
-        if len(args.shape) == 1:
-            input_shape = (1, 3, args.shape[0], args.shape[0])
-        elif len(args.shape) == 2:
-            input_shape = (
-                              1,
-                              3,
-                          ) + tuple(args.shape)
-        else:
-            raise ValueError('invalid input shape')
+    def convert(self, ):
+        checkpath = osp.join(self.work_dir, 'models/F1_best_model.pth')
+        checkpoint = torch.load(checkpath, map_location='cpu')
+        cfg = checkpoint["meta"]["config"]
+        input_shape = (1, 3, cfg.size[0], cfg.size[1])
 
-        cfg = mmcv.Config.fromfile(args.config)
         cfg.model.pretrained = None
-
         # build the model and load checkpoint
         segmentor = build_segmentor(
             cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
         # convert SyncBN to BN
         segmentor = _convert_batchnorm(segmentor)
-
-        if args.checkpoint:
-            load_checkpoint(segmentor, args.checkpoint, map_location='cpu')
+        load_checkpoint(segmentor, checkpath, map_location='cpu')
 
         # conver model to onnx file
+        output_file = osp.join(cfg.work_dir, 'F1_best_model.onnx')
         pytorch2onnx(
             segmentor,
             input_shape,
-            opset_version=args.opset_version,
-            show=args.show,
-            output_file=args.output_file,
-            verify=args.verify)
+            opset_version=11,
+            show=True,
+            output_file=output_file,
+            verify=True)
 
     def uninit(self):
         print("python ainnovision uninit")
@@ -316,4 +314,4 @@ if __name__ == "__main__":
     mv.init()
     mv.train_py(runstate)
     # mv.inference_py(runstate)
-    # mv.convert(runstate)
+    # mv.convert()
