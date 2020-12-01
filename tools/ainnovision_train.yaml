@@ -7,7 +7,6 @@ MODEL:
     PRETRAIN_BACKBONE: True
     PRETRAINED_DIR: 'encoding/pretrained_models'
 
-    BN: "BN"
     DU_SCALE: 8
     SPP_SIZE: [2, 4, 8, 16] # [1, 2, 3, 6, 12, 24] [1, 2, 4, 8, 16, 32]
     DROPOUT2d: 0.5 # 0.1

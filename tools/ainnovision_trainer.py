@@ -40,7 +40,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             if mvpara.get(mvfield, None):
                 mmpara[mmfield] = mvpara.get(mvfield)
     ## model
-    mmcfg.norm_cfg.type = mvcfg.MODEL.BN
+    mmcfg.norm_cfg.type = "BN"
     for module, config in mmcfg.model.items():
         if isinstance(config, dict) and 'norm_cfg' in config.keys():
             mmcfg._cfg_dict['model'][module]['norm_cfg']['type'] = mmcfg.norm_cfg.type
