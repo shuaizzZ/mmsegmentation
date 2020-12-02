@@ -41,9 +41,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             if mvpara.get(mvfield, None):
                 mmpara[mmfield] = mvpara.get(mvfield)
     ## model
-    print('************************* mmcfg.pretrained_name')
     if mmcfg.pretrained_name in pretrained_models:
-        print('************************* mmcfg.pretrained_name')
         mmcfg.model.pretrained = get_pretrained_path(mmcfg.pretrained_name)
     mmcfg.norm_cfg.type = "BN"
     for module, config in mmcfg.model.items():
