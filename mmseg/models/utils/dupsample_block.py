@@ -27,12 +27,12 @@ class DUpsamplingBlock(nn.Module):
         conv_p = nn.Conv2d(NSS, self.inplanes, kernel_size=1, padding=self.pad, bias=False)
         return conv_p
 
-    def mirror_process(self, mask):
+    def mirror_process(self, mask, device_ids=0):
         N, C, H, W = int_size(mask)
         C = self.num_class
         # N, C, H, W
         #mask = torch.unsqueeze(mask, dim=1)
-        sample = torch.zeros(N, C, H, W).cuda()
+        sample = torch.zeros(N, C, H, W).cuda(device_ids)
 
         # 必须要把255这个标签去掉，否则下面scatter_会出错(但不在这里报错)
         mask[mask > C] = 0
