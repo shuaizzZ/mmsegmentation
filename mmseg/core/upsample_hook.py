@@ -54,8 +54,8 @@ class UpsampleHook(Hook):
         self.data_loaders = [
             build_dataloader(
                 ds,
-                1,
-                1,
+                cfg.data.samples_per_gpu,
+                cfg.data.workers_per_gpu,
                 # cfg.gpus will be ignored if distributed
                 len(cfg.gpu_ids),
                 dist=distributed,
