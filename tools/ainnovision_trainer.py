@@ -23,6 +23,7 @@ try:
                             _convert_batchnorm, _demo_mm_inputs, pytorch2onnx)
     from mmseg.datasets import build_dataset, build_dataloader
     from mmseg.models import build_segmentor
+    from mmseg.models.pretrained_models import pretrained_models, get_pretrained_path
     from mmseg.utils import collect_env, get_root_logger
 except Exception as ex:
     ex_type, ex_val, ex_stack = sys.exc_info()
@@ -40,6 +41,10 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             if mvpara.get(mvfield, None):
                 mmpara[mmfield] = mvpara.get(mvfield)
     ## model
+    print('************************* mmcfg.pretrained_name')
+    if mmcfg.pretrained_name in pretrained_models:
+        print('************************* mmcfg.pretrained_name')
+        mmcfg.model.pretrained = get_pretrained_path(mmcfg.pretrained_name)
     mmcfg.norm_cfg.type = "BN"
     for module, config in mmcfg.model.items():
         if isinstance(config, dict) and 'norm_cfg' in config.keys():
@@ -56,8 +61,12 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             modify_if_exist(mmcfg._cfg_dict['data'][mode], [para],
                             mmcfg._cfg_dict, [para])
 
-    # pipeline train
+    # train label
     mmcfg.labels = mvcfg.DATASETS.LABELS
+    mmcfg.num_classes = max(mmcfg.labels)+1
+    mmcfg.model.decode_head.num_classes = mmcfg.num_classes
+    mmcfg.model.auxiliary_head.num_classes = mmcfg.num_classes
+    # pipeline train
     mmcfg.crop_size = mvcfg.DATASETS.AUGMENT.CROP_SIZE
     option_para = {'Relabel': ['labels'],
                    'RandomCrop': ['crop_size'],}
@@ -81,7 +90,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
                             option_para[trans_type])
     mmcfg.data.val.pipeline = mmcfg.val_pipeline
 
-    mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
+    # mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
     mmcfg.data.workers_per_gpu = 0
 
     ## schedule
@@ -95,17 +104,6 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
 
     return mmcfg
 
-def merge_config():
-    mv_config_file = "ainnovision_train.yaml"
-    mv_config_path = os.path.join(os.path.split(__file__)[0], mv_config_file)
-    mvcfg = Config.fromfile(mv_config_path)
-    # mmseg config
-    # mm_config_path = '../work_dir/2020_1029/pspnet_r50-d8_512x512_80k_ade20k.py'
-    # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
-    mm_config_file = "mm_seg.py"
-    mm_config_path = os.path.join(os.path.split(__file__)[0], mm_config_file)
-    mmcfg = Config.fromfile(mm_config_path)
-    cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
 class ainnovision():
     def init(self):
