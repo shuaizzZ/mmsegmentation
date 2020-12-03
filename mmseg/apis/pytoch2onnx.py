@@ -116,8 +116,9 @@ def pytorch2onnx(model,
             keep_initializers_as_inputs=True,
             verbose=show,
             opset_version=opset_version)
-        print(f'Successfully exported ONNX model: {output_file}')
+
     model.forward = origin_forward
+    print(f'Successfully exported ONNX model: {output_file}')
 
     # if verify:
     #     # check by onnx

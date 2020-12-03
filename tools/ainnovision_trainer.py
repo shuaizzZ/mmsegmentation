@@ -172,6 +172,7 @@ class ainnovision():
                         f'{cfg.deterministic}')
             set_random_seed(cfg.seed, deterministic=cfg.deterministic)
 
+        # meta['config'] = cfg
         meta['seed'] = cfg.seed
         meta['exp_name'] = osp.basename(mm_config_path)
 
@@ -266,20 +267,32 @@ class ainnovision():
 
 
     def convert(self, ):
-        checkpath = osp.join(self.work_dir, 'models/F1_best_model.pth')
-        checkpoint = torch.load(checkpath, map_location='cpu')
-        cfg = checkpoint["meta"]["config"]
-        input_shape = (1, 3, cfg.size[0], cfg.size[1])
+        # manuvision config
+        mv_config_file = "ainnovision_train.yaml"
+        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mvcfg = Config.fromfile(mv_config_path)
+        # mmseg config
+        # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
+        mm_config_file = "mm_seg.py"
+        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mmcfg = Config.fromfile(mm_config_path)
+        cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
-        cfg.model.pretrained = None
+        checkpath = osp.join(cfg.work_dir, 'F1_best_model.pth')
+        checkpoint = torch.load(checkpath, map_location='cpu')
+        model_cfg = checkpoint["config"].model
+
         # build the model and load checkpoint
+        model_cfg.pretrained = None
+        print(model_cfg)
         segmentor = build_segmentor(
-            cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+            model_cfg, train_cfg=None, test_cfg=cfg.test_cfg)
         # convert SyncBN to BN
         segmentor = _convert_batchnorm(segmentor)
-        load_checkpoint(segmentor, checkpath, map_location='cpu')
+        checkpoint = load_checkpoint(segmentor, checkpath, map_location='cpu')
 
         # conver model to onnx file
+        input_shape = (1, 3, cfg.size[0], cfg.size[1])
         output_file = osp.join(cfg.work_dir, 'F1_best_model.onnx')
         pytorch2onnx(
             segmentor,
@@ -303,5 +316,5 @@ if __name__ == "__main__":
     mv = ainnovision()
     mv.init()
     # mv.train_py(runstate)
-    mv.inference_py(runstate)
-    # mv.convert()
+    # mv.inference_py(runstate)
+    mv.convert()

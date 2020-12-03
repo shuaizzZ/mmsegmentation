@@ -186,19 +186,21 @@ def trainer_segmentor(model,
             work_dir=cfg.work_dir,
             logger=logger,
             meta=meta))
-
-    # register hooks
+    ## an ugly walkaround to save config in checkpoint
+    # runner.__setattr__('config', cfg)
+    ## register hooks
     checkpoint_config = cfg.checkpoint_config
     checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
+    checkpoint_config.setdefault('config', cfg)
     trainer_checkpoint_hook = mmcv.build_from_cfg(checkpoint_config, HOOKS)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    trainer_checkpoint_hook, cfg.log_config,
                                    cfg.get('momentum_config', None))
 
-    # an ugly walkaround to make the .log and .log.json filenames the same
+    ## an ugly walkaround to make the .log and .log.json filenames the same
     runner.timestamp = timestamp
 
-    # register eval hooks
+    ## register eval hooks
     if validate:
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
         val_dataloader = build_dataloader(
@@ -220,10 +222,9 @@ def trainer_segmentor(model,
     ## du blocks
     if cfg.resume_from is None and cfg.load_from is None:
         runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
-    # register CheckRunstateHook and TrainerLogHook
+    ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
     trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
     runner.register_hook(TrainerLogHook(trainer_log_path))
-    # runner.register_hook(CheckpointHook(cfg.checkpoint_config))
 
     runner.run(data_loaders, cfg.workflow)
