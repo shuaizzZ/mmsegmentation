@@ -1,8 +1,11 @@
-import os.path as osp
+
+import os
 import pickle
 import shutil
 import tempfile
 import numpy as np
+import os.path as osp
+from yutils.csv.csv import CSV
 
 import cv2
 import mmcv
@@ -82,16 +85,24 @@ def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, out_di
     Returns:
         list: The prediction results.
     """
-    if out_dir:
-        out_pt = osp.join(out_dir, 'test_predict')
-        mmcv.mkdir_or_exist(out_dir)
+
+    log_path = osp.join(out_dir, 'test_log.csv')
+    if osp.isfile(log_path):
+        os.remove(log_path)
+    test_log = CSV(log_path)
+    log_head = ['Image_ID']
+    test_log.append(log_head)
+
+    out_pt = osp.join(out_dir, 'test_predict')
+    mmcv.mkdir_or_exist(out_pt)
+    if draw_contours:
         out_cnt = osp.join(out_dir, 'test_drawContours')
         mmcv.mkdir_or_exist(out_cnt)
     model.eval()
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
 
-    for i, data in enumerate(data_loader):
+    for img_id, data in enumerate(data_loader):
         if runstate[0] == 0:
             sys.exit(0)
         with torch.no_grad():
@@ -99,25 +110,26 @@ def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, out_di
         img_metas = data['img_metas'][0].data[0]
         img_path = img_metas[0]['filename']
         img_name = osp.basename(img_path)
-        ## output image with draw_contours
-        if out_dir:
-            ## output pt map
-            base_name = img_name.split('.')[0]
-            for chn in range(1, result.size(1)):
-                probability = np.uint8(result[0, chn, :, :].cpu() * 255)
-                out_path = osp.join(out_dir, '{}_{}.png'.format(base_name, chn))
-                imwrite(probability, out_path)
-                # cv2.imwrite(out_path, probability)
-            if draw_contours:
-                image = cv2.imread(img_path, cv2.IMREAD_COLOR)
-                h, w = image.shape[:2]
-                line = int(np.sqrt(h*w) // 512 + 1)
-                predict = torch.max(result, 1)[1].cpu().numpy()
-                predict = np.uint8(np.squeeze(predict))
-                contours, _ = cv2.findContours(predict, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                cv2.drawContours(image, contours, -1, (0, 0, 255), line)
-                cv2.imwrite(osp.join(out_cnt, img_name), image)
 
+        ## output pt map
+        base_name = img_name.split('.')[0]
+        for chn in range(1, result.size(1)):
+            probability = np.uint8(result[0, chn, :, :].cpu() * 255)
+            out_path = osp.join(out_pt, '{}_{}.png'.format(base_name, chn))
+            # imwrite(probability, out_path)
+            cv2.imwrite(out_path, probability)
+        ## output image with draw_contours
+        if draw_contours:
+            image = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            h, w = image.shape[:2]
+            line = int(np.sqrt(h*w) // 512 + 1)
+            predict = torch.max(result, 1)[1].cpu().numpy()
+            predict = np.uint8(np.squeeze(predict))
+            contours, _ = cv2.findContours(predict, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(image, contours, -1, (0, 0, 255), line)
+            cv2.imwrite(osp.join(out_cnt, img_name), image)
+
+        test_log.append(img_id)
         batch_size = data['img'][0].size(0)
         for _ in range(batch_size):
             prog_bar.update()
