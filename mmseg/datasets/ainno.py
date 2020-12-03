@@ -1,4 +1,5 @@
 
+import os
 import time
 import random
 import os.path as osp
@@ -49,32 +50,36 @@ class AinnoDataset(Dataset):
         self.reduce_zero_label = reduce_zero_label
         self.label_map = None
         self.test_mode = test_mode
-
         self.img_infos = []
 
-        # _split_file = osp.join(self.data_root, 'yantai_datasets', dataset, '{}.csv'.format(self.split))
-        _split_file = osp.join(self.data_root, '{}.csv'.format(self.split))
-        if not osp.isfile(_split_file):
-            raise ValueError('Unknown dataset _split_file: {}'.format(_split_file))
+        if not self.test_mode:
+            _split_file = osp.join(self.data_root, '{}.csv'.format(self.split))
+            if not osp.isfile(_split_file):
+                raise ValueError('Unknown dataset _split_file: {}'.format(_split_file))
+            with open(_split_file, "r") as lines:
+                lines = list(lines)
+            for line in tqdm(lines, desc=self.split):
+                ##-- 读取_image, _mask --##
+                _image, _mask = line.rstrip('\n').split(',')[:2]
+                _image = osp.join(self.data_root, _image)
+                _mask = osp.join(self.data_root, _mask)
+                if not osp.isfile(_image):
+                    print('image error: {}'.format(_image))
+                    continue
+                if not osp.isfile(_mask):
+                    print('mask error: {}'.format(_mask))
+                    continue
+                sample = dict(filename=_image,
+                              ann=dict(seg_map=_mask))
+                self.img_infos.append(sample)
+        else:
+            test_dir = osp.join(self.data_root, self.split)
+            assert osp.isdir(test_dir), 'test_dir is not dir :'.format(test_dir)
+            for img_name in os.listdir(test_dir):
+                sample = dict(filename=osp.join(test_dir, img_name),
+                              ann=dict(seg_map=None))
+                self.img_infos.append(sample)
 
-        with open(_split_file, "r") as lines:
-            lines = list(lines)
-        print(_split_file)
-        for line in tqdm(lines, desc=self.split):
-            ##-- 读取_image, _mask --##
-            _image, _mask = line.rstrip('\n').split(',')[:2]
-            _image = osp.join(self.data_root, _image)
-            _mask = osp.join(self.data_root, _mask)
-            if not osp.isfile(_image):
-                print('image error: {}'.format(_image))
-                continue
-            if not osp.isfile(_mask):
-                print('mask error: {}'.format(_mask))
-                continue
-
-            sample = dict(filename=_image,
-                          ann=dict(seg_map=_mask))
-            self.img_infos.append(sample)
 
         self.set_len = len(self.img_infos)
         time.sleep(1)

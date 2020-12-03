@@ -230,11 +230,6 @@ class ainnovision():
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
-        # work_dir = '/root/public02/manuag/zhangshuai/manuvision-mmsegmentation/tools/yantai-4'
-        model_path = osp.join(self.work_dir, 'latest.pth')
-        out_dir = osp.join(self.work_dir, 'test')
-        mmcv.mkdir_or_exist(out_dir)
-        # model_path = os.path.join(cfg.data_root, 'models', 'best_model.pth.tar')
         # set cudnn_benchmark
         if cfg.get('cudnn_benchmark', False):
             torch.backends.cudnn.benchmark = True
@@ -261,13 +256,13 @@ class ainnovision():
 
         # build the model and load checkpoint
         model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
+        model_path = osp.join(cfg.work_dir, 'F1_best_model.pth')
         checkpoint = load_checkpoint(model, model_path, map_location='cpu')
-        model.CLASSES = checkpoint['meta']['CLASSES']
-        model.PALETTE = checkpoint['meta']['PALETTE']
 
         if not distributed:
             model = MMDataParallel(model, device_ids=[0])
-            mv_single_gpu_test(model, data_loader, runstate=runstate, out_dir=out_dir)
+            mv_single_gpu_test(model, data_loader, runstate=runstate,
+                               draw_contours=True, out_dir=cfg.data_root)
 
 
     def convert(self, ):
@@ -307,6 +302,6 @@ if __name__ == "__main__":
 
     mv = ainnovision()
     mv.init()
-    mv.train_py(runstate)
-    # mv.inference_py(runstate)
+    # mv.train_py(runstate)
+    mv.inference_py(runstate)
     # mv.convert()
