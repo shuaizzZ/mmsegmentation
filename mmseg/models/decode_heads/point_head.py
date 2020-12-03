@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 # TODO win10 not support, 2020.11.26
-# from mmcv.ops import point_sample
+from mmcv.ops import point_sample
 
 from mmseg.models.builder import HEADS
 from mmseg.ops import resize
