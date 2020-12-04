@@ -11,7 +11,7 @@ import numpy as np
 from mmcv.utils import print_log
 from torch.utils.data import Dataset
 
-from mmseg.core import mean_iou
+from mmseg.core import mean_iou, defect_metrics
 from mmseg.utils import get_root_logger
 
 from torch.utils.data import Dataset
@@ -197,6 +197,12 @@ class AinnoDataset(Dataset):
 
         all_acc, acc, iou = mean_iou(
             results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
+
+        IoU_defect, Precision, Recall, F1 = defect_metrics(
+            results, gt_seg_maps, ignore_index=self.ignore_index) 
+
+        # print_log('{} {} {} {}'.format(mIoU, mPrecision, mRecall, mF1), logger)
+
         summary_str = ''
         summary_str += 'per class results:\n'
 
@@ -221,9 +227,15 @@ class AinnoDataset(Dataset):
                                           all_acc_str)
         print_log(summary_str, logger)
 
+    
         eval_results['mIoU'] = np.nanmean(iou)
         eval_results['mAcc'] = np.nanmean(acc)
         eval_results['aAcc'] = all_acc
+
+        # eval_results['IoU_defect'] = IoU_defect
+        eval_results['Precision'] = Precision
+        eval_results['Recall'] = Recall
+        eval_results['F1'] = F1   
 
         return eval_results
 
