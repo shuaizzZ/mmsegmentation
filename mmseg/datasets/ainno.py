@@ -74,7 +74,7 @@ class AinnoDataset(Dataset):
                 self.img_infos.append(sample)
         else:
             test_dir = osp.join(self.data_root, self.split)
-            assert osp.isdir(test_dir), 'test_dir is not dir :'.format(test_dir)
+            assert osp.isdir(test_dir), test_dir
             for img_name in os.listdir(test_dir):
                 sample = dict(filename=osp.join(test_dir, img_name),
                               ann=dict(seg_map=None))
