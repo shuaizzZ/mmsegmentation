@@ -1,8 +1,8 @@
 # ======================================= model settings ======================================= #
 norm_cfg = dict(type='BN', requires_grad=True)
 num_classes = 2
-# dupsample=dict(scale=8)
-dupsample=None
+dupsample=dict(scale=8)
+# dupsample=None
 align_corners=False
 pretrained_name='resnet18'
 model = dict(
@@ -156,7 +156,7 @@ log_config = dict(
     ])
 seed = 4
 deterministic = None
-gpu_ids = [0]
+gpu_ids = [1]
 
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
@@ -178,7 +178,7 @@ lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
                  warmup='linear', warmup_iters=600, warmup_ratio=0.01,
                  warmup_by_epoch=False)
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=500)
+runner = dict(type='EpochBasedRunner', max_epochs=5000)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
 evaluation = dict(interval=1, metric='mIoU')
 
