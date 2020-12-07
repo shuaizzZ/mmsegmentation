@@ -1,15 +1,15 @@
 # ======================================= model settings ======================================= #
 norm_cfg = dict(type='BN', requires_grad=True)
 num_classes = 2
-dupsample=dict(scale=8)
-# dupsample=None
+# dupsample=dict(scale=8)
+dupsample=None
 align_corners=False
 pretrained_name='resnet18'
 model = dict(
     type='EncoderDecoder',
     pretrained='open-mmlab://resnet18_v1c',
     backbone=dict(
-        type='ResNetV1c',
+        type='ResNet',
         depth=18,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
@@ -24,7 +24,7 @@ model = dict(
         type='PSPHead',
         in_channels=512,
         in_index=3,
-        channels=256,
+        channels=128,
         pool_scales=(2, 4, 8, 16),
         dropout_ratio=0.1,
         num_classes=num_classes,
@@ -71,23 +71,26 @@ labels = [0, 1, 2, 3, 3, 0, 0, 2, 0, 1] # 4
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-img_scale=(2448, 2048)
-crop_size = (2048, 2048)
-size = (2048, 2048)
+img_scale=(1024, 1024)
+crop_size = (1024, 1024)
 # img_scale=(512, 512)
 # crop_size = (512, 512)
-# size = (512, 512)
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', reduce_zero_label=False),
     dict(type='Relabel', labels=labels),
-    dict(type='Resize', img_scale=img_scale, ratio_range=(0.5, 2.0)),
-    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=1.0),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='PhotoMetricDistortion'),
+    dict(type='MVResize', h_range=(0.8, 1.2), w_range=(0.8, 1.2), keep_ratio=True),
+    dict(type='MVRotate', angle_range=(-45, 45), center=None),
+    dict(type='MVCrop', crop_size=crop_size, crop_mode='random',
+         pad_mode=["range", "constant"], pad_fill=[[0, 255], 0], pad_expand=1.2),
+    dict(type='PhotoMetricDistortion',
+         brightness_delta=50,
+         contrast_range=(0.8, 1.2),
+         saturation_range=(0.8, 1.2),
+         hue_delta=50),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=size, pad_val=0, seg_pad_val=0),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_semantic_seg']),
 ]
@@ -99,7 +102,8 @@ val_pipeline = [
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
-            dict(type='Resize', keep_ratio=True),
+            dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
+                 pad_mode=['range', 'constant'], pad_fill=[[0, 255], 0], pad_expand=1.0),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
@@ -110,7 +114,6 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         img_scale=img_scale,
-        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
             dict(type='Normalize', **img_norm_cfg),
@@ -175,10 +178,10 @@ optimizer_config = dict()
 # learning policy
 # lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=False)
 lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
-                 warmup='linear', warmup_iters=600, warmup_ratio=0.01,
-                 warmup_by_epoch=False)
+                 warmup='linear', warmup_iters=6, warmup_ratio=0.01,
+                 warmup_by_epoch=True)
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=5000)
+runner = dict(type='EpochBasedRunner', max_epochs=300)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
 evaluation = dict(interval=1, metric='mIoU')
 

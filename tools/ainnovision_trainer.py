@@ -67,7 +67,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     # pipeline train
     mmcfg.crop_size = mvcfg.DATASETS.AUGMENT.CROP_SIZE
     option_para = {'Relabel': ['labels'],
-                   'RandomCrop': ['crop_size'],}
+                   'MVCrop': ['crop_size'],}
     for i, trans_dict in enumerate(mmcfg.train_pipeline):
         trans_type = trans_dict.type
         if trans_type in option_para.keys():
@@ -78,7 +78,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.train.pipeline = mmcfg.train_pipeline
     # pipeline val
     option_para = {'Relabel': ['labels'],
-                   'Pad': ['size']}
+                   'MVCrop': ['crop_size'],}
     for i, trans_dict in enumerate(mmcfg.val_pipeline):
         trans_type = trans_dict.type
         if trans_type in option_para.keys():
@@ -87,6 +87,16 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
                             mmcfg._cfg_dict,
                             option_para[trans_type])
     mmcfg.data.val.pipeline = mmcfg.val_pipeline
+    # pipeline test
+    option_para = {'MVCrop': ['crop_size'],}
+    for i, trans_dict in enumerate(mmcfg.val_pipeline):
+        trans_type = trans_dict.type
+        if trans_type in option_para.keys():
+            modify_if_exist(mmcfg._cfg_dict['test_pipeline'][i],
+                            option_para[trans_type],
+                            mmcfg._cfg_dict,
+                            option_para[trans_type])
+    mmcfg.data.test.pipeline = mmcfg.test_pipeline
 
     # mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
     mmcfg.data.workers_per_gpu = 0
@@ -259,6 +269,7 @@ class ainnovision():
         model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
         model_path = osp.join(cfg.work_dir, 'F1_best_model.pth')
         checkpoint = load_checkpoint(model, model_path, map_location='cpu')
+        # print(checkpoint['epoch'])
 
         if not distributed:
             model = MMDataParallel(model, device_ids=[0])
@@ -315,6 +326,6 @@ if __name__ == "__main__":
 
     mv = ainnovision()
     mv.init()
-    mv.train_py(runstate)
-    # mv.inference_py(runstate)
+    # mv.train_py(runstate)
+    mv.inference_py(runstate)
     # mv.convert()
