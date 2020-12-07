@@ -148,7 +148,6 @@ data = dict(
         pipeline=test_pipeline),)
 
 # ======================================= runtime settings ======================================= #
-#log_config = None 
 log_config = dict(
    interval=8,
    hooks=[
