@@ -267,7 +267,7 @@ class ainnovision():
 
         # build the model and load checkpoint
         model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-        model_path = osp.join(cfg.work_dir, 'F1_best_model.pth')
+        model_path = osp.join(cfg.work_dir, 'F1_best_model.pth.tar')
         checkpoint = load_checkpoint(model, model_path, map_location='cpu')
         # print(checkpoint['epoch'])
 
@@ -289,7 +289,7 @@ class ainnovision():
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
-        checkpath = osp.join(cfg.work_dir, 'F1_best_model.pth')
+        checkpath = osp.join(cfg.work_dir, 'F1_best_model.pth.tar')
         checkpoint = torch.load(checkpath, map_location='cpu')
         model_cfg = checkpoint["config"].model
 
@@ -326,6 +326,6 @@ if __name__ == "__main__":
 
     mv = ainnovision()
     mv.init()
-    # mv.train_py(runstate)
-    mv.inference_py(runstate)
+    mv.train_py(runstate)
+    # mv.inference_py(runstate)
     # mv.convert()
