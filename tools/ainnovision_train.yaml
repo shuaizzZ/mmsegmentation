@@ -40,7 +40,8 @@ DATASETS:
     AUGMENT:
         TRANSPOSE: [0,1,2,3,4,5,6]
         # FLIP_LEFT_RIGHT, FLIP_TOP_BOTTOM, ROTATE_90, ROTATE_180, ROTATE_270, TRANSPOSE, TRANSVERSE ==> 0~6
-        CROP_SIZE: [2048, 2048]
+        # CROP_SIZE: [2048, 2048]
+        CROP_SIZE: [256, 256]
         RESIZE_MODE: 1
         RESIZE_RANGE_H: [0.7, 1.4]
         RESIZE_RANGE_W: [0.7, 1.4]
@@ -159,7 +160,8 @@ VAL:
 
     IN_SIZE:
         MODE: 'crop'        # full, crop, resize
-        SIZE: [1024, 1024]  # h, w
+        # SIZE: [1024, 1024]  # h, w
+        SIZE: [256, 256]  # h, w
 
     COM_F1: True
     BEST_TYPE: 'F1'

@@ -208,8 +208,12 @@ def trainer_segmentor(model,
             samples_per_gpu=1,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=distributed,
-            shuffle=False)
+            shuffle=False)         
         eval_cfg = cfg.get('evaluation', {})
+        ## 度量指标
+        eval_cfg['com_f1'] = cfg.com_f1
+        eval_cfg['defect_metric'] = cfg.defect_metric
+        eval_cfg['defect_filter'] = cfg.defect_filter         
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
@@ -224,7 +228,7 @@ def trainer_segmentor(model,
         runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
     ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
-    trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
-    runner.register_hook(TrainerLogHook(trainer_log_path))
+    # trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
+    # runner.register_hook(TrainerLogHook(trainer_log_path))
 
     runner.run(data_loaders, cfg.workflow)

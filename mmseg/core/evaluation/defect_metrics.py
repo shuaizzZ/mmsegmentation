@@ -487,7 +487,7 @@ def oneimg_tp_pre_tar(predict, target, defect_metric, defect_filter, nclass, sta
     #print(one_class_defect_f1)
     return one_total_defect_f1, one_class_defect_f1
 
-def segmentation_defect_f1(predict, target, defect_metric, defect_filter, nclass, stations=[], ignore_index):
+def segmentation_defect_f1(predict, target, defect_metric, defect_filter, nclass, stations, ignore_index):
     """Batch truePositive_and_total
     Args:
         predict: input 3D nparray
@@ -898,16 +898,19 @@ class SegmentationMetric(object):
         self.Cn = np.array([self.C1 for i in range(self.nclass)])
 
     def update_batch_metrics(self, predict, target, station):
-        ## ------ 使用Tensor计算auc相关指标 ------ ##
-        start = time.time()
-        predict = F.softmax(predict, dim=1)
-        # ok, score = batch_ok_score(predict, target, self.nclass)
-        end_auc = time.time()
-        ## ------ predict, target 转 numpy ------ ##
-        _, predict = torch.max(predict, 1)
+        # ## ------ 使用Tensor计算auc相关指标 ------ ##
+        # start = time.time()
+        # predict = F.softmax(predict, dim=1)
+        # # ok, score = batch_ok_score(predict, target, self.nclass)
+        # end_auc = time.time()
+        # ## ------ predict, target 转 numpy ------ ##
+        # _, predict = torch.max(predict, 1)
+        predict = torch.Tensor(predict)
+        target = torch.Tensor(target)
         predict = predict.cpu().numpy().astype(np.uint8)
         target = target.cpu().numpy().astype(np.uint8)
         end_npy = time.time()
+
         ## ------ 计算pixAcc, IoU, F1 ------ ##
         batch_pixel_labeled, batch_pixel_correct, batch_pixel_union = \
             segmentation_pixelAcc_iou(predict, target, self.nclass, self.ignore_index)
