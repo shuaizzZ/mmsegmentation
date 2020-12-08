@@ -102,8 +102,8 @@ val_pipeline = [
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
-            dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
-                 pad_mode=['range', 'constant'], pad_fill=[[0, 255], 0], pad_expand=1.0),
+            # dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
+            #      pad_mode=['range', 'constant'], pad_fill=[[0, 255], 0], pad_expand=1.0),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
