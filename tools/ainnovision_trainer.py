@@ -115,7 +115,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
 
 class ainnovision():
     def init(self):
-        self.work_dir = os.path.split(__file__)[0]
+        self.py_dir = os.path.split(__file__)[0]
         print ("python ainnovision init")
 
     def train(self, runstate):
@@ -131,12 +131,12 @@ class ainnovision():
     def train_py(self, runstate):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
-        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mv_config_path = os.path.join(self.py_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
         mm_config_file = "mm_seg.py"
-        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mm_config_path = os.path.join(self.py_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
@@ -232,12 +232,12 @@ class ainnovision():
     def inference_py(self, runstate):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
-        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mv_config_path = os.path.join(self.py_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
         mm_config_file = "mm_seg.py"
-        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mm_config_path = os.path.join(self.py_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
@@ -280,12 +280,12 @@ class ainnovision():
     def convert(self, ):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
-        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mv_config_path = os.path.join(self.py_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
         mm_config_file = "mm_seg.py"
-        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mm_config_path = os.path.join(self.py_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
