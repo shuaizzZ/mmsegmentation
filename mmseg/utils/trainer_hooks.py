@@ -33,6 +33,9 @@ class TrainerLogHook(Hook):
         log_head = ['epoch', 'iou']
         self.log_csv.append(log_head)
 
+    def before_epoch(self, runner):
+        print('\n')
+        
     def after_train_epoch(self, runner):
         log_info = [runner.epoch, runner.log_buffer.output['mIoU']]
         self.log_csv.append(log_info)
