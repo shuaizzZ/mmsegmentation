@@ -6,7 +6,7 @@ from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Normalize, Pad, PhotoMetricDistortion, RandomCrop,
                          RandomFlip, Resize, SegRescale)
 
-from .yantai_aug import (Relabel, )
+from .mv_transforms import (Relabel, MVResize, MVCrop)
 
 __all__ = [
     'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
@@ -14,5 +14,5 @@ __all__ = [
     'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'Pad', 'RandomCrop',
     'Normalize', 'SegRescale', 'PhotoMetricDistortion',
 
-    'Relabel',
+    'Relabel', 'MVResize', 'MVCrop',
 ]

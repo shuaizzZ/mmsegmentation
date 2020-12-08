@@ -98,7 +98,7 @@ class TrainerCheckpointHook(Hook):
             self.out_dir = runner.work_dir
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
-        trainer_model_path = osp.join(self.out_dir, 'F1_best_model.pth')
+        trainer_model_path = osp.join(self.out_dir, 'F1_best_model.pth.tar')
         save_checkpoint(runner.model, trainer_model_path,
                         optimizer=runner.optimizer, meta=runner.meta, config=self.config)
         if runner.meta is not None:
