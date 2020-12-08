@@ -185,3 +185,5 @@ runner = dict(type='EpochBasedRunner', max_epochs=300)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
 evaluation = dict(interval=1, metric='mIoU')
 
+# ======================================= convert ======================================= #
+convert_size = (1024, 1024)

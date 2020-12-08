@@ -276,8 +276,17 @@ class ainnovision():
             mv_single_gpu_test(model, data_loader, runstate=runstate,
                                draw_contours=True, out_dir=cfg.data_root)
 
+    def convert(self, runstate, mode=0):
+        try:
+            self.convert_py(runstate, mode)
+        except Exception as ex:
+            ex_type, ex_val, ex_stack = sys.exc_info()
+            print('ex_type:',ex_type)
+            print('ex_val:',ex_val)
+            for stack in traceback.extract_tb(ex_stack):
+                print(stack)
 
-    def convert(self, ):
+    def convert_py(self, runstate, mode=0):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
         mv_config_path = os.path.join(self.py_dir, mv_config_file)
@@ -295,7 +304,6 @@ class ainnovision():
 
         # build the model and load checkpoint
         model_cfg.pretrained = None
-        print(model_cfg)
         segmentor = build_segmentor(
             model_cfg, train_cfg=None, test_cfg=cfg.test_cfg)
         # convert SyncBN to BN
@@ -303,12 +311,12 @@ class ainnovision():
         checkpoint = load_checkpoint(segmentor, checkpath, map_location='cpu')
 
         # conver model to onnx file
-        input_shape = (1, 3, cfg.size[0], cfg.size[1])
+        input_shape = (1, 3, cfg.convert_size[0], cfg.convert_size[1])
         output_file = osp.join(cfg.work_dir, 'F1_best_model.onnx')
         pytorch2onnx(
             segmentor,
             input_shape,
-            opset_version=11,
+            opset_version=10,
             show=True,
             output_file=output_file,
             verify=True)
@@ -326,6 +334,6 @@ if __name__ == "__main__":
 
     mv = ainnovision()
     mv.init()
-    mv.train_py(runstate)
+    # mv.train_py(runstate)
     # mv.inference_py(runstate)
-    # mv.convert()
+    mv.convert_py(runstate, 0)
