@@ -63,7 +63,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
                  sampler=None,
                  align_corners=False,
                  dupsample=None,
-                 pooling='avg'):
+                 **kwargs):
         super(BaseDecodeHead, self).__init__()
         self._init_inputs(in_channels, in_index, input_transform)
         self.channels = channels
@@ -80,7 +80,6 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         self.loss_decode = dict((loss_seg['type'], build_loss(loss_seg)) for loss_seg in loss_decode)
         self.ignore_index = ignore_index
         self.align_corners = align_corners
-        self.pooling = pooling
         if sampler is not None:
             self.sampler = build_pixel_sampler(sampler, context=self)
         else:
