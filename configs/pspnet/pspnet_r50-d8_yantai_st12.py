@@ -7,8 +7,8 @@ model = dict(
 test_cfg = dict(mode='whole')
 
 du_config = dict(
-    interval=200,
+    interval=10,
     optimizer=dict(type='SGD', lr=0.01),
-    total_runs=1000,
+    total_runs=40,
     by_epoch=False
 )

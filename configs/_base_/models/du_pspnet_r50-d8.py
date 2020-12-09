@@ -1,5 +1,6 @@
 # model settings
 norm_cfg = dict(type='BN', requires_grad=True)
+dupsample=dict(scale=8)
 model = dict(
     type='EncoderDecoder',
     pretrained='open-mmlab://resnet50_v1c',
@@ -19,15 +20,15 @@ model = dict(
         in_channels=2048,
         in_index=3,
         channels=512,
-        pool_scales=(1, 2, 3, 6),
         dropout_ratio=0.1,
         num_classes=19,
         norm_cfg=norm_cfg,
         align_corners=False,
-        dupsample=dict(
-            scale=8
-        ),
-        pooling='mix',
+        ppm_cfg=dict(ppm_channels=512,
+                     pool_scales=(2, 4, 8, 16),
+                     pooling='mix',
+                     attention_cfg=dict(type='MCBAM', ratio=16, kernel_size=7),),
+        dupsample=dupsample,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
     auxiliary_head=dict(
@@ -41,9 +42,7 @@ model = dict(
         num_classes=19,
         norm_cfg=norm_cfg,
         align_corners=False,
-        dupsample=dict(
-            scale=8
-        ),
+        dupsample=dupsample,
         loss_decode=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)))
 # model training and testing settings
