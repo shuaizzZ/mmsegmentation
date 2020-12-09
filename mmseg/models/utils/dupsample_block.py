@@ -1,12 +1,7 @@
+
 import torch
 from torch import nn as nn
-
-# 暂时放在这，以后要放到工具中
-def int_size(x):
-    size = []
-    for i in x.size():
-        size.append(int(i))
-    return size
+from .custom_blocks import int_size
 
 class DUpsamplingBlock(nn.Module):
     def __init__(self, inplanes, scale, num_class=21, pad=0):
@@ -27,12 +22,12 @@ class DUpsamplingBlock(nn.Module):
         conv_p = nn.Conv2d(NSS, self.inplanes, kernel_size=1, padding=self.pad, bias=False)
         return conv_p
 
-    def mirror_process(self, mask, device_ids=0):
-        N, C, H, W = int_size(mask)
+    def mirror_process(self, mask):
+        N, _, H, W = int_size(mask)  # N, 1, H, W
         C = self.num_class
+
         # N, C, H, W
-        #mask = torch.unsqueeze(mask, dim=1)
-        sample = torch.zeros(N, C, H, W).cuda(device_ids)
+        sample = torch.zeros(N, C, H, W).cuda(mask.device.index)
 
         # 必须要把255这个标签去掉，否则下面scatter_会出错(但不在这里报错)
         mask[mask > C] = 0

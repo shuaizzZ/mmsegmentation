@@ -121,7 +121,7 @@ def train_segmentor(model,
 
     ## du blocks
     if cfg.resume_from is None and cfg.load_from is None:
-        runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
+        runner.register_hook(UpsampleHook(model, cfg, distributed=False))
 
     runner.run(data_loaders, cfg.workflow)
 
