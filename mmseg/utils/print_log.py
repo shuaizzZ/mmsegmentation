@@ -30,7 +30,7 @@ def print_defect_metrics(logger, all_acc, acc, iou, recall, precision, f1, CLASS
     summary_str = ''
     summary_str += 'per class results:\n'
 
-    line_format = '{:<15} {:>10} {:>10} {:>10} {:>10} {:>10}\n'
+    line_format = '{:<15} {:^10} {:^10} {:^10} {:^10} {:^10}\n'
     summary_str += line_format.format('Class', 'IoU', 'Acc', 'Recall', 'Precision', 'F1')
     if CLASSES is None:
         class_names = tuple(range(num_classes))
@@ -44,7 +44,7 @@ def print_defect_metrics(logger, all_acc, acc, iou, recall, precision, f1, CLASS
         f1_str = '{:.2f}'.format(f1[i] * 100)      
         summary_str += line_format.format(class_names[i], iou_str, acc_str, recall_str, precision_str, f1_str)
     summary_str += 'Summary:\n'
-    line_format = '{:<15} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n'
+    line_format = '{:<15} {:^10} {:^10} {:^10} {:^10} {:^10} {:^10}\n'
     summary_str += line_format.format('Scope', 'mIoU', 'mAcc', 'mRecall', 'mPrecision', 'mF1', 'aAcc')
 
     iou_str = '{:.2f}'.format(np.nanmean(iou) * 100)
