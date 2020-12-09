@@ -2,6 +2,11 @@
 import torch
 import torch.nn as nn
 
+
+def int_size(x):
+    size = tuple(int(s) for s in x.size())
+    return size
+
 class Mix2Pooling(nn.Module):
     def __init__(self, size):
         super(Mix2Pooling, self).__init__()

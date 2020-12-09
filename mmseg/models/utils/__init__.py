@@ -4,9 +4,9 @@ from .res_layer import ResLayer
 from .self_attention_block import SelfAttentionBlock
 from .up_conv_block import UpConvBlock
 from .dupsample_block import DUpsamplingBlock
-from .custom_blocks import Mix2Pooling
+from .custom_blocks import Mix2Pooling, int_size
 
 __all__ = [
     'ResLayer', 'SelfAttentionBlock', 'make_divisible', 'InvertedResidual',
-    'UpConvBlock', 'DUpsamplingBlock', 'Mix2Pooling'
+    'UpConvBlock', 'DUpsamplingBlock', 'Mix2Pooling', 'int_size',
 ]
