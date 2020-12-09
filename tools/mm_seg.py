@@ -32,7 +32,8 @@ model = dict(
         align_corners=align_corners,
         dupsample=dupsample,
         pooling='mix',
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)
+        loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+                     dict(type='DiceLoss', loss_weight=1.0),]
     ),
     auxiliary_head=dict(
         type='FCNHead',
@@ -46,7 +47,8 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=align_corners,
         dupsample=dupsample,
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)
+        loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4),
+                     dict(type='DiceLoss', loss_weight=0.4),]
     ),
 )
 du_config = dict(
