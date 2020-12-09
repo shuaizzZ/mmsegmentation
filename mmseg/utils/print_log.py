@@ -54,5 +54,5 @@ def print_defect_metrics(logger, all_acc, acc, iou, recall, precision, f1, CLASS
     f1_str = '{:.2f}'.format(np.nanmean(f1) * 100)     
     all_acc_str = '{:.2f}'.format(all_acc * 100)
     summary_str += line_format.format('global', iou_str, acc_str, recall_str, precision_str, f1_str,
-                                        all_acc_str)
+                                        all_acc_str)[:-2]
     print_log(summary_str, logger)

@@ -209,16 +209,15 @@ class AinnoDataset(Dataset):
 
         print_defect_metrics(logger, pixAcc, class_pixAcc, class_iou, class_recall, class_precision, class_F1, self.CLASSES, num_classes)
 
-        # eval_results['mIoU'] = np.nanmean(iou)
-        # eval_results['mAcc'] = np.nanmean(acc)
-        # eval_results['aAcc'] = all_acc
+        eval_results['mIoU'] = np.nanmean(class_iou)
+        eval_results['mAcc'] = np.nanmean(class_pixAcc)
+        eval_results['aAcc'] = pixAcc
 
-        # eval_results['IoU_defect'] = IoU_defect
-        # eval_results['Precision'] = Precision
-        # eval_results['Recall'] = Recall
-        # eval_results['F1'] = F1   
+        eval_results['mPrecision'] = np.nanmean(class_precision)
+        eval_results['mRecall'] = np.nanmean(class_recall)
+        eval_results['mF1'] = np.nanmean(class_F1)   
 
-        return eval_results
+        return  eval_results
 
 
     def __getitem__(self, idx):

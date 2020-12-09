@@ -136,7 +136,7 @@ def trainer_segmentor(model,
                     runstate=np.array([1])):
     """Launch segmentor training."""
     from mmcv.runner import HOOKS
-    from mmseg.utils import CheckRunstateHook, TrainerLogHook, TrainerCheckpointHook
+    from mmseg.utils import CheckRunstateHook, TrainerLogHook, TrainerCheckpointHook, StatisticTextLoggerHook
 
     logger = get_root_logger(cfg.log_level)
 
@@ -216,7 +216,7 @@ def trainer_segmentor(model,
         eval_cfg['defect_filter'] = cfg.defect_filter         
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+        runner.register_hook(eval_hook(val_dataloader, **eval_cfg),'VERY_LOW')
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

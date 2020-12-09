@@ -32,9 +32,6 @@ class TrainerLogHook(Hook):
         self.log_csv = CSV(trainer_log_path)
         log_head = ['epoch', 'iou']
         self.log_csv.append(log_head)
-
-    def before_epoch(self, runner):
-        print('\n')
         
     def after_train_epoch(self, runner):
         log_info = [runner.epoch, runner.log_buffer.output['mIoU']]
@@ -86,7 +83,7 @@ class TrainerCheckpointHook(Hook):
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
             return
 
-        runner.logger.info(f'Saving checkpoint at {runner.epoch + 1} epochs')
+        # runner.logger.info(f'Saving checkpoint at {runner.epoch + 1} epochs')
         if self.sync_buffer:
             allreduce_params(runner.model.buffers())
         self._save_checkpoint(runner)
@@ -98,9 +95,19 @@ class TrainerCheckpointHook(Hook):
             self.out_dir = runner.work_dir
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
-        trainer_model_path = osp.join(self.out_dir, 'F1_best_model.pth.tar')
-        save_checkpoint(runner.model, trainer_model_path,
-                        optimizer=runner.optimizer, meta=runner.meta, config=self.config)
+        if runner.epoch == 0:
+            runner.best_eval_res = runner.eval_res
+        else:
+            for name, val in runner.eval_res.items():
+                if runner.best_eval_res[name] < val:
+                    runner.best_eval_res[name] = val
+                    trainer_model_path = osp.join(self.out_dir, name +'_best_model.pth.tar')
+                    save_checkpoint(runner.model, trainer_model_path, optimizer=runner.optimizer, meta=runner.meta, config=self.config)               
+                    runner.logger.info(f'Saving {name}_best checkpoint at {runner.epoch + 1} epochs')
+                    
+        # trainer_model_path = osp.join(self.out_dir, 'F1_best_model.pth.tar')
+        # save_checkpoint(runner.model, trainer_model_path,
+        #                 optimizer=runner.optimizer, meta=runner.meta, config=self.config)
         if runner.meta is not None:
             if self.by_epoch:
                 cur_ckpt_filename = self.args.get(
