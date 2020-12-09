@@ -22,9 +22,18 @@ class PPM(nn.Module):
         align_corners (bool): align_corners argument of F.interpolate.
     """
 
-    def __init__(self, pool_scales, in_channels, ppm_channels, conv_cfg, norm_cfg,
-                 act_cfg, align_corners, pooling='avg', attention_cfg=None):
+    def __init__(self,
+                 in_channels,
+                 conv_cfg,
+                 norm_cfg,
+                 act_cfg,
+                 align_corners,
+                 pool_scales=(1, 2, 3, 6),
+                 ppm_channels=128,
+                 pooling='avg',
+                 attention_cfg=None):
         super(PPM, self).__init__()
+        assert isinstance(pool_scales, (list, tuple))
         self.pool_scales = pool_scales
         self.align_corners = align_corners
         self.in_channels = in_channels
@@ -83,24 +92,14 @@ class PSPHead(BaseDecodeHead):
     """
 
     def __init__(self,
-                 pool_scales=(1, 2, 3, 6),
-                 ppm_channels=128,
-                 pooling='avg',
-                 attention_cfg=None,
+                 ppm_cfg=(1, 2, 3, 6),
                  **kwargs):
         super(PSPHead, self).__init__(**kwargs)
-        assert isinstance(pool_scales, (list, tuple))
-        self.pool_scales = pool_scales
-        self.ppm = PPM(
-            self.pool_scales,
-            self.in_channels,
-            ppm_channels,
-            conv_cfg=self.conv_cfg,
-            norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg,
-            align_corners=self.align_corners,
-            pooling=pooling,
-            attention_cfg=attention_cfg)
+        self.ppm_cfg = ppm_cfg
+        for attr in ['in_channels', 'conv_cfg', 'norm_cfg', 'act_cfg', 'align_corners']:
+            self.ppm_cfg[attr] = getattr(self, attr)
+        self.ppm = PPM(**self.ppm_cfg)
+
         self.bottleneck = ConvModule(
             self.ppm.out_channels,
             self.channels,
