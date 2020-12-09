@@ -24,6 +24,7 @@ model = dict(
         type='PSPHead',
         in_channels=512,
         in_index=3,
+        ppm_channels=128,
         channels=128,
         pool_scales=(2, 4, 8, 16),
         dropout_ratio=0.1,
@@ -32,6 +33,7 @@ model = dict(
         align_corners=align_corners,
         dupsample=dupsample,
         pooling='mix',
+        attention_cfg=dict(type='MCBAM', ratio=16, kernel_size=7),
         loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
                      dict(type='DiceLoss', loss_weight=1.0),]
     ),
@@ -54,7 +56,7 @@ model = dict(
 du_config = dict(
     interval=10,
     optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
-    total_runs=200,
+    total_runs=40,
     by_epoch=False)
 # model training and testing settings
 train_cfg = dict()
