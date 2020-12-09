@@ -99,7 +99,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.test.pipeline = mmcfg.test_pipeline
 
     # mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
-    # mmcfg.data.workers_per_gpu = 0
+    mmcfg.data.workers_per_gpu = 0
 
     ## schedule
     # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
@@ -336,4 +336,4 @@ if __name__ == "__main__":
     mv.init()
     mv.train_py(runstate)
     # mv.inference_py(runstate)
-    mv.convert_py(runstate, 0)
+    # mv.convert_py(runstate, 0)
