@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader
 
 from mmcv.runner import Hook, build_optimizer
 from mmcv.runner.iter_based_runner import IterLoader
-# from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmseg.datasets.builder import build_dataloader, build_dataset
 from mmseg.models.utils.dupsample_block import DUpsamplingBlock, MirrorDUpsamplingBlock
 from mmseg.models.utils.custom_blocks import parallel_model
@@ -66,19 +65,8 @@ class WarmUpDUpsampleHook(Hook):
         for dupsampleblock in self.dupsampleblock_list:
             warmup_du_model = MirrorDUpsamplingBlock(dupsampleblock)
             optimizer = build_optimizer(warmup_du_model, cfg.du_config.optimizer)
-
             # put model on gpus
             warmup_du_model = parallel_model(warmup_du_model, cfg.gpu_ids, distributed)
-            # if distributed:
-            #     find_unused_parameters = cfg.get('find_unused_parameters', False)
-            #     warmup_du_model = MMDistributedDataParallel(
-            #         warmup_du_model.cuda(),
-            #         device_ids=[torch.cuda.current_device()],
-            #         broadcast_buffers=False,
-            #         find_unused_parameters=find_unused_parameters)
-            # else:
-            #     warmup_du_model = MMDataParallel(
-            #         warmup_du_model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
 
             warmup_du_info = {'model': warmup_du_model, 'optimizer': optimizer, 'du_loss': 0.0}
             self.warmup_du_infos.append(warmup_du_info)
