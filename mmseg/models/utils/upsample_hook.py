@@ -32,10 +32,11 @@ class UpsampleHook(Hook):
     """
 
     def __init__(self, model, cfg, distributed=False, runstate=np.array([1])):
-        from mmseg.datasets import build_dataloader, build_dataset
+        # from mmseg.datasets import build_dataloader, build_dataset
         self.upsampleblock_list = self._find_upsampleblocks(model)
         self.upsampleblock_infos = []
         self.distributed = distributed
+        # TODO only support one gpu run
         self.device_ids = cfg.gpu_ids[0]
         self.runstate = runstate
 
@@ -53,13 +54,14 @@ class UpsampleHook(Hook):
 
         # prepare data loaders
         datasets = datasets if isinstance(datasets, (list, tuple)) else [datasets]
+        num_gpus = len(self.device_ids) if isinstance(self.device_ids, list) else 1
         self.data_loaders = [
             build_dataloader(
                 ds,
                 cfg.data.samples_per_gpu,
                 cfg.data.workers_per_gpu,
                 # cfg.gpus will be ignored if distributed
-                len(cfg.gpu_ids),
+                num_gpus,
                 dist=distributed,
                 seed=cfg.seed,
                 drop_last=True) for ds in datasets
@@ -120,9 +122,10 @@ class UpsampleHook(Hook):
         for upsampleblock_info in self.upsampleblock_infos:
             upsampleblock_info['optimizer'].zero_grad()
             target = data_batch['gt_semantic_seg'].data[0]
-            target = target.cuda(self.device_ids)
-            seggt_onehot = upsampleblock_info['preprocess'](target, device_ids=self.device_ids)
+            # target = target.cuda(self.device_ids)
+            seggt_onehot = upsampleblock_info['preprocess'](target)
             seggt_onehot_reconstructed = upsampleblock_info['model'](seggt_onehot)
+            seggt_onehot = seggt_onehot.cuda(seggt_onehot_reconstructed.device.index)
             rec_loss = upsampleblock_info['criterion'](seggt_onehot, seggt_onehot_reconstructed)
 
             if self.mix_prec:

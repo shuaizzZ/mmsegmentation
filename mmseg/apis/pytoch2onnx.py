@@ -105,7 +105,7 @@ def pytorch2onnx(model,
     # replace original forward function
     origin_forward = model.forward
     model.forward = partial(
-        model.forward, img_metas=img_meta_list, return_loss=False)
+        model.forward, img_metas=img_meta_list, return_loss=False, return_logit=True)
 
     register_extra_symbolics(opset_version)
     with torch.no_grad():

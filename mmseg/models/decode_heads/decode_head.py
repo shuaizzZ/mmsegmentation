@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 import torch
 import torch.nn as nn
+import mmcv
 from mmcv.cnn import normal_init
 from mmcv.runner import auto_fp16, force_fp32
 
@@ -62,7 +63,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
                  sampler=None,
                  align_corners=False,
                  dupsample=None,
-                 pooling='avg'):
+                 **kwargs):
         super(BaseDecodeHead, self).__init__()
         self._init_inputs(in_channels, in_index, input_transform)
         self.channels = channels
@@ -72,10 +73,13 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
         self.in_index = in_index
-        self.loss_decode = build_loss(loss_decode)
+        ## build loss
+        if not isinstance(loss_decode, list):
+            loss_decode = [loss_decode]
+        assert mmcv.is_list_of(loss_decode, dict)
+        self.loss_decode = dict((loss_seg['type'], build_loss(loss_seg)) for loss_seg in loss_decode)
         self.ignore_index = ignore_index
         self.align_corners = align_corners
-        self.pooling = pooling
         if sampler is not None:
             self.sampler = build_pixel_sampler(sampler, context=self)
         else:
@@ -239,10 +243,14 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         else:
             seg_weight = None
         seg_label = seg_label.squeeze(1)
-        loss['loss_seg'] = self.loss_decode(
-            seg_logit,
-            seg_label,
-            weight=seg_weight,
-            ignore_index=self.ignore_index)
+        loss['loss_seg'] = 0
+        for single_type, single_loss in self.loss_decode.items():
+            single_value = single_loss(
+                seg_logit,
+                seg_label,
+                weight=seg_weight,
+                ignore_index=self.ignore_index)
+            loss[single_type] = single_value
+            loss['loss_seg'] += single_value
         loss['acc_seg'] = accuracy(seg_logit, seg_label)
         return loss

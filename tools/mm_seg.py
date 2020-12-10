@@ -25,14 +25,17 @@ model = dict(
         in_channels=512,
         in_index=3,
         channels=128,
-        pool_scales=(2, 4, 8, 16),
         dropout_ratio=0.1,
         num_classes=num_classes,
         norm_cfg=norm_cfg,
         align_corners=align_corners,
         dupsample=dupsample,
-        pooling='mix',
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)
+        ppm_cfg=dict(ppm_channels=128,
+                     pool_scales=(2, 4, 8, 16),
+                     pooling='mix',
+                     attention_cfg=dict(type='MCBAM', ratio=16, kernel_size=7),),
+        loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+                     dict(type='DiceLoss', loss_weight=1.0),]
     ),
     auxiliary_head=dict(
         type='FCNHead',
@@ -46,13 +49,15 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=align_corners,
         dupsample=dupsample,
-        loss_decode=dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)
+        loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4),
+                     dict(type='DiceLoss', loss_weight=0.4),]
     ),
 )
-du_config = dict(
+warmup_du_cfg = dict(
     interval=10,
-    optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
-    total_runs=200,
+    optimizer=dict(type='SGD', lr=0.01),
+    # optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
+    total_runs=40,
     by_epoch=False)
 # model training and testing settings
 train_cfg = dict()
@@ -185,3 +190,5 @@ runner = dict(type='EpochBasedRunner', max_epochs=300)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
 evaluation = dict(interval=1, metric='mIoU')
 
+# ======================================= convert ======================================= #
+convert_size = (1024, 1024)

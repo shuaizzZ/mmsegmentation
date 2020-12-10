@@ -4,6 +4,7 @@ from torch import nn
 BACKBONES = Registry('backbone')
 NECKS = Registry('neck')
 HEADS = Registry('head')
+ATTENTION = Registry('attention')
 LOSSES = Registry('loss')
 SEGMENTORS = Registry('segmentor')
 
@@ -44,6 +45,11 @@ def build_neck(cfg):
 def build_head(cfg):
     """Build head."""
     return build(cfg, HEADS)
+
+
+def build_attention(cfg):
+    """Build loss."""
+    return build(cfg, ATTENTION)
 
 
 def build_loss(cfg):

@@ -9,20 +9,17 @@ try:
     import os.path as osp
 
     import torch
-    # from mmseg.mv_yaml.mv_train_default import _C as mvcfg
-    # from mmseg.mv_yaml.mv_test_default import _C as mvcfg_test
-
     import mmcv
     from mmcv.runner import init_dist, load_checkpoint
     from mmcv.utils import Config, DictAction, get_git_hash
-    from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+    from mmcv.parallel import MMDataParallel
 
     from mmseg import __version__
     from mmseg.apis import (set_random_seed, trainer_segmentor,
                             mv_single_gpu_test,
                             _convert_batchnorm, _demo_mm_inputs, pytorch2onnx)
-    from mmseg.datasets import build_dataset, build_dataloader
-    from mmseg.models import build_segmentor
+    from mmseg.datasets.builder import build_dataset, build_dataloader
+    from mmseg.models.builder import build_segmentor
     from mmseg.models.pretrained_models import pretrained_models, get_pretrained_path
     from mmseg.utils import collect_env, get_root_logger
 except Exception as ex:
@@ -104,7 +101,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.test.pipeline = mmcfg.test_pipeline
 
     # mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
-    mmcfg.data.workers_per_gpu = 0
+    # mmcfg.data.workers_per_gpu = 0
 
     ## schedule
     # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
@@ -120,7 +117,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
 
 class ainnovision():
     def init(self):
-        self.work_dir = os.path.split(__file__)[0]
+        self.py_dir = os.path.split(__file__)[0]
         print ("python ainnovision init")
 
     def train(self, runstate):
@@ -136,12 +133,12 @@ class ainnovision():
     def train_py(self, runstate):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
-        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mv_config_path = os.path.join(self.py_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
         mm_config_file = "mm_seg.py"
-        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mm_config_path = os.path.join(self.py_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
@@ -187,7 +184,6 @@ class ainnovision():
                         f'{cfg.deterministic}')
             set_random_seed(cfg.seed, deterministic=cfg.deterministic)
 
-        # meta['config'] = cfg
         meta['seed'] = cfg.seed
         meta['exp_name'] = osp.basename(mm_config_path)
 
@@ -237,12 +233,12 @@ class ainnovision():
     def inference_py(self, runstate):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
-        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mv_config_path = os.path.join(self.py_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
         mm_config_file = "mm_seg.py"
-        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mm_config_path = os.path.join(self.py_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
@@ -272,35 +268,43 @@ class ainnovision():
 
         # build the model and load checkpoint
         model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
-        model_path = osp.join(cfg.work_dir, 'F1_best_model.pth')
+        model_path = osp.join(cfg.work_dir, 'F1_best_model.pth.tar')
         checkpoint = load_checkpoint(model, model_path, map_location='cpu')
-        # print(checkpoint['epoch'])
+        config = checkpoint['meta']['config']
 
         if not distributed:
             model = MMDataParallel(model, device_ids=[0])
             mv_single_gpu_test(model, data_loader, runstate=runstate,
                                draw_contours=True, out_dir=cfg.data_root)
 
+    def convert(self, runstate, mode=0):
+        try:
+            self.convert_py(runstate, mode)
+        except Exception as ex:
+            ex_type, ex_val, ex_stack = sys.exc_info()
+            print('ex_type:',ex_type)
+            print('ex_val:',ex_val)
+            for stack in traceback.extract_tb(ex_stack):
+                print(stack)
 
-    def convert(self, ):
+    def convert_py(self, runstate, mode=0):
         # manuvision config
         mv_config_file = "ainnovision_train.yaml"
-        mv_config_path = os.path.join(self.work_dir, mv_config_file)
+        mv_config_path = os.path.join(self.py_dir, mv_config_file)
         mvcfg = Config.fromfile(mv_config_path)
         # mmseg config
         # mm_config_path = '../configs/pspnet/pspnet_r50-d8_yantai_st12.py'
         mm_config_file = "mm_seg.py"
-        mm_config_path = os.path.join(self.work_dir, mm_config_file)
+        mm_config_path = os.path.join(self.py_dir, mm_config_file)
         mmcfg = Config.fromfile(mm_config_path)
         cfg = merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg)
 
-        checkpath = osp.join(cfg.work_dir, 'F1_best_model.pth')
+        checkpath = osp.join(cfg.work_dir, 'F1_best_model.pth.tar')
         checkpoint = torch.load(checkpath, map_location='cpu')
         model_cfg = checkpoint["config"].model
 
         # build the model and load checkpoint
         model_cfg.pretrained = None
-        print(model_cfg)
         segmentor = build_segmentor(
             model_cfg, train_cfg=None, test_cfg=cfg.test_cfg)
         # convert SyncBN to BN
@@ -308,12 +312,12 @@ class ainnovision():
         checkpoint = load_checkpoint(segmentor, checkpath, map_location='cpu')
 
         # conver model to onnx file
-        input_shape = (1, 3, cfg.size[0], cfg.size[1])
+        input_shape = (1, 3, cfg.convert_size[0], cfg.convert_size[1])
         output_file = osp.join(cfg.work_dir, 'F1_best_model.onnx')
         pytorch2onnx(
             segmentor,
             input_shape,
-            opset_version=11,
+            opset_version=10,
             show=True,
             output_file=output_file,
             verify=True)
@@ -333,4 +337,4 @@ if __name__ == "__main__":
     mv.init()
     mv.train_py(runstate)
     # mv.inference_py(runstate)
-    # mv.convert()
+    # mv.convert_py(runstate, 0)
