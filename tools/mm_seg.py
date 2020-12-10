@@ -159,7 +159,7 @@ data = dict(
 log_config = dict(
    interval=8,
    hooks=[
-       dict(type='TextLoggerHook', by_epoch=True),
+       dict(type='StatisticTextLoggerHook', by_epoch=True),
        #dict(type='TensorboardLoggerHook')
    ])
 seed = 4
