@@ -32,7 +32,7 @@ class UpsampleHook(Hook):
     """
 
     def __init__(self, model, cfg, distributed=False, runstate=np.array([1])):
-        from mmseg.datasets import build_dataloader, build_dataset
+        # from mmseg.datasets import build_dataloader, build_dataset
         self.upsampleblock_list = self._find_upsampleblocks(model)
         self.upsampleblock_infos = []
         self.distributed = distributed
@@ -91,7 +91,7 @@ class UpsampleHook(Hook):
                     find_unused_parameters=find_unused_parameters)
             else:
                 model = MMDataParallel(
-                    model.cuda(self.device_ids), device_ids=[self.device_ids])
+                    model.cuda(self.device_ids), device_ids=cfg.gpu_ids)
 
             upsampleblock_info = {'model': model, 'preprocess': mirror_process,
                                   'criterion': criterion, 'optimizer': optimizer, 'du_loss': 0.0,
@@ -122,9 +122,10 @@ class UpsampleHook(Hook):
         for upsampleblock_info in self.upsampleblock_infos:
             upsampleblock_info['optimizer'].zero_grad()
             target = data_batch['gt_semantic_seg'].data[0]
-            target = target.cuda(self.device_ids)
+            # target = target.cuda(self.device_ids)
             seggt_onehot = upsampleblock_info['preprocess'](target)
             seggt_onehot_reconstructed = upsampleblock_info['model'](seggt_onehot)
+            seggt_onehot = seggt_onehot.cuda(seggt_onehot_reconstructed.device.index)
             rec_loss = upsampleblock_info['criterion'](seggt_onehot, seggt_onehot_reconstructed)
 
             if self.mix_prec:

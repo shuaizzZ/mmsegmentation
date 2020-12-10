@@ -2,6 +2,8 @@
 import torch
 from torch import nn as nn
 from .custom_blocks import int_size
+from ..builder import build_loss
+
 
 class DUpsamplingBlock(nn.Module):
     def __init__(self, inplanes, scale, num_class=21, pad=0):
@@ -11,16 +13,51 @@ class DUpsamplingBlock(nn.Module):
         self.num_class = num_class
         self.pad = pad
         ## W matrix
-        self.conv_w = nn.Conv2d(inplanes, num_class * scale * scale, kernel_size=1, padding=pad, bias=False)
+        NSS = self.num_class * self.scale * self.scale
+        self.conv_w = nn.Conv2d(inplanes, NSS, kernel_size=1, padding=pad, bias=False)
         self.T = torch.nn.Parameter(torch.Tensor([1.00]))  # softmax with temperature
 
-    # 必须这么实现，否则self.conv_p 清除不掉的！！！
-    def get_conv_p(self):
-        ## TODO
+    def forward_process(self, x):
+        # N, C, H, W = x.size()
+        N, C, H, W = int_size(x)
+
+        ## N, W, H, C
+        x_permuted = x.permute(0, 3, 2, 1)
+
+        ## N, W, H*scale, C/scale
+        HmC, CdS = int(H * self.scale), int(C / self.scale)
+        x_permuted = x_permuted.contiguous().view((N, W, HmC, CdS))
+
+        ## N, H*scale, W, C/scale
+        x_permuted = x_permuted.permute(0, 2, 1, 3)
+
+        ## N, H*scale, W*scale, C/(scale**2)
+        WmC, CdSS = int(W * self.scale), int(C / (self.scale * self.scale))
+        x_permuted = x_permuted.contiguous().view((N, HmC, WmC, CdSS))
+
+        ## N, C/(scale**2), H*scale, W*scale
+        x = x_permuted.permute(0, 3, 1, 2)
+        return x
+
+    def forward(self, x):
+        x = self.conv_w(x)
+        x = self.forward_process(x)
+        x = x / self.T
+        return x
+
+
+class MirrorDUpsamplingBlock(nn.Module):
+    def __init__(self, du_block, loss_cfg=dict(type='MSELoss')):
+        super(MirrorDUpsamplingBlock, self).__init__()
+        self.inplanes = du_block.inplanes
+        self.scale = du_block.scale
+        self.num_class = du_block.num_class
+        self.pad = du_block.pad
+        self.conv_w = du_block.conv_w
         ## P matrix
         NSS = self.num_class * self.scale * self.scale
-        conv_p = nn.Conv2d(NSS, self.inplanes, kernel_size=1, padding=self.pad, bias=False)
-        return conv_p
+        self.conv_p = nn.Conv2d(NSS, self.inplanes, kernel_size=1, padding=self.pad, bias=False)
+        self.loss_du = build_loss(loss_cfg)
 
     def mirror_process(self, mask):
         N, _, H, W = int_size(mask)  # N, 1, H, W
@@ -52,30 +89,10 @@ class DUpsamplingBlock(nn.Module):
         seggt_onehot = seggt_onehot.permute(0, 3, 2, 1)
         return seggt_onehot
 
-    def forward_process(self, x):
-        # N, C, H, W = x.size()
-        N, C, H, W = int_size(x)
+    def forward(self, seggt):
+        seggt_onehot = self.mirror_process(seggt)
+        seggt_onehot_reconstructed = self.conv_p(seggt_onehot)
+        seggt_onehot_reconstructed = self.conv_w(seggt_onehot_reconstructed)
+        loss = self.loss_du(seggt_onehot, seggt_onehot_reconstructed)
 
-        ## N, W, H, C
-        x_permuted = x.permute(0, 3, 2, 1)
-
-        ## N, W, H*scale, C/scale
-        HmC, CdS = int(H * self.scale), int(C / self.scale)
-        x_permuted = x_permuted.contiguous().view((N, W, HmC, CdS))
-
-        ## N, H*scale, W, C/scale
-        x_permuted = x_permuted.permute(0, 2, 1, 3)
-
-        ## N, H*scale, W*scale, C/(scale**2)
-        WmC, CdSS = int(W * self.scale), int(C / (self.scale * self.scale))
-        x_permuted = x_permuted.contiguous().view((N, HmC, WmC, CdSS))
-
-        ## N, C/(scale**2), H*scale, W*scale
-        x = x_permuted.permute(0, 3, 1, 2)
-        return x
-
-    def forward(self, x):
-        x = self.conv_w(x)
-        x = self.forward_process(x)
-        x = x / self.T
-        return x
+        return loss
