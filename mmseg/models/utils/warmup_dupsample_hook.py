@@ -43,9 +43,9 @@ class WarmUpDUpsampleHook(Hook):
         if 0 == len(self.dupsampleblock_list):
             return
 
-        self.interval = cfg.du_config.interval
-        self.by_epoch = cfg.du_config.by_epoch
-        self._max_runs = cfg.du_config.total_runs
+        self.interval = cfg.warmup_du_cfg.interval
+        self.by_epoch = cfg.warmup_du_cfg.by_epoch
+        self._max_runs = cfg.warmup_du_cfg.total_runs
         self._iter = 0
         self._epoch = 0
 
@@ -64,7 +64,7 @@ class WarmUpDUpsampleHook(Hook):
 
         for dupsampleblock in self.dupsampleblock_list:
             warmup_du_model = MirrorDUpsamplingBlock(dupsampleblock)
-            optimizer = build_optimizer(warmup_du_model, cfg.du_config.optimizer)
+            optimizer = build_optimizer(warmup_du_model, cfg.warmup_du_cfg.optimizer)
             # put model on gpus
             warmup_du_model = parallel_model(warmup_du_model, cfg.gpu_ids, distributed)
 
