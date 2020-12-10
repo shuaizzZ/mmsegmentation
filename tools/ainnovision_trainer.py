@@ -9,20 +9,17 @@ try:
     import os.path as osp
 
     import torch
-    # from mmseg.mv_yaml.mv_train_default import _C as mvcfg
-    # from mmseg.mv_yaml.mv_test_default import _C as mvcfg_test
-
     import mmcv
     from mmcv.runner import init_dist, load_checkpoint
     from mmcv.utils import Config, DictAction, get_git_hash
-    from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+    from mmcv.parallel import MMDataParallel
 
     from mmseg import __version__
     from mmseg.apis import (set_random_seed, trainer_segmentor,
                             mv_single_gpu_test,
                             _convert_batchnorm, _demo_mm_inputs, pytorch2onnx)
-    from mmseg.datasets import build_dataset, build_dataloader
-    from mmseg.models import build_segmentor
+    from mmseg.datasets.builder import build_dataset, build_dataloader
+    from mmseg.models.builder import build_segmentor
     from mmseg.models.pretrained_models import pretrained_models, get_pretrained_path
     from mmseg.utils import collect_env, get_root_logger
 except Exception as ex:
@@ -99,7 +96,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.test.pipeline = mmcfg.test_pipeline
 
     # mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
-    mmcfg.data.workers_per_gpu = 0
+    # mmcfg.data.workers_per_gpu = 0
 
     ## schedule
     # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
@@ -182,7 +179,6 @@ class ainnovision():
                         f'{cfg.deterministic}')
             set_random_seed(cfg.seed, deterministic=cfg.deterministic)
 
-        # meta['config'] = cfg
         meta['seed'] = cfg.seed
         meta['exp_name'] = osp.basename(mm_config_path)
 
@@ -269,7 +265,7 @@ class ainnovision():
         model = build_segmentor(cfg.model, train_cfg=None, test_cfg=cfg.test_cfg)
         model_path = osp.join(cfg.work_dir, 'F1_best_model.pth.tar')
         checkpoint = load_checkpoint(model, model_path, map_location='cpu')
-        # print(checkpoint['epoch'])
+        config = checkpoint['meta']['config']
 
         if not distributed:
             model = MMDataParallel(model, device_ids=[0])

@@ -98,9 +98,10 @@ class TrainerCheckpointHook(Hook):
             self.out_dir = runner.work_dir
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
-        trainer_model_path = osp.join(self.out_dir, 'F1_best_model.pth.tar')
-        save_checkpoint(runner.model, trainer_model_path,
-                        optimizer=runner.optimizer, meta=runner.meta, config=self.config)
+        runner.save_checkpoint(
+            self.out_dir, save_optimizer=self.save_optimizer,
+            filename_tmpl='F1_best_model.pth.tar', **self.args)
+
         if runner.meta is not None:
             if self.by_epoch:
                 cur_ckpt_filename = self.args.get(
@@ -140,43 +141,3 @@ class TrainerCheckpointHook(Hook):
         if self.sync_buffer:
             allreduce_params(runner.model.buffers())
         self._save_checkpoint(runner)
-
-def save_checkpoint(model, filename, optimizer=None, meta=None, config=None):
-    """Save checkpoint to file.
-
-    The checkpoint will have 3 fields: ``meta``, ``state_dict`` and
-    ``optimizer``. By default ``meta`` will contain version and time info.
-
-    Args:
-        model (Module): Module whose params are to be saved.
-        filename (str): Checkpoint filename.
-        optimizer (:obj:`Optimizer`, optional): Optimizer to be saved.
-        meta (dict, optional): Metadata to be saved in checkpoint.
-    """
-    if meta is None:
-        meta = {}
-    elif not isinstance(meta, dict):
-        raise TypeError(f'meta must be a dict or None, but got {type(meta)}')
-    meta.update(mmcv_version=mmcv.__version__, time=time.asctime())
-
-    mmcv.mkdir_or_exist(osp.dirname(filename))
-    if is_module_wrapper(model):
-        model = model.module
-
-    checkpoint = {
-        'meta': meta,
-        'state_dict': weights_to_cpu(get_state_dict(model))
-    }
-    # save optimizer state dict in the checkpoint
-    if isinstance(optimizer, Optimizer):
-        checkpoint['optimizer'] = optimizer.state_dict()
-    elif isinstance(optimizer, dict):
-        checkpoint['optimizer'] = {}
-        for name, optim in optimizer.items():
-            checkpoint['optimizer'][name] = optim.state_dict()
-    # save config in the checkpoint
-    checkpoint['config'] = config
-    # immediately flush buffer
-    with open(filename, 'wb') as f:
-        torch.save(checkpoint, f)
-        f.flush()
