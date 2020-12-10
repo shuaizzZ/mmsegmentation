@@ -159,7 +159,8 @@ VAL:
 
     IN_SIZE:
         MODE: 'crop'        # full, crop, resize
-        SIZE: [1024, 1024]  # h, w
+        # SIZE: [1024, 1024]  # h, w
+        SIZE: [256, 256]  # h, w
 
     COM_F1: True
     BEST_TYPE: 'F1'

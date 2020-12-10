@@ -76,10 +76,10 @@ labels = [0, 1, 2, 3, 3, 0, 0, 2, 0, 1] # 4
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-img_scale=(1024, 1024)
-crop_size = (1024, 1024)
-# img_scale=(512, 512)
-# crop_size = (512, 512)
+# img_scale=(1024, 1024)
+# crop_size = (1024, 1024)
+img_scale=(256, 256)
+crop_size = (256, 256)
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -164,7 +164,7 @@ log_config = dict(
    ])
 seed = 4
 deterministic = None
-gpu_ids = [1]
+gpu_ids = [0]
 
 dist_params = dict(backend='nccl')
 log_level = 'INFO'

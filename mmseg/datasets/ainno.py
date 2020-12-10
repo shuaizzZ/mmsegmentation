@@ -1,4 +1,3 @@
-
 import os
 import time
 import random
@@ -8,11 +7,10 @@ from functools import reduce
 
 import mmcv
 import numpy as np
-from mmcv.utils import print_log
 from torch.utils.data import Dataset
 
-from mmseg.core import mean_iou, defect_metrics
-from mmseg.utils import get_root_logger
+from mmseg.core import mean_iou, SegmentationMetric
+from mmseg.utils import get_root_logger, print_metrics, print_defect_metrics
 
 from torch.utils.data import Dataset
 from .pipelines import Compose
@@ -199,49 +197,31 @@ class AinnoDataset(Dataset):
         else:
             num_classes = len(self.CLASSES)
 
-        all_acc, acc, iou = mean_iou(
-            results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
+        #all_acc, acc, iou = mean_iou(
+        #    results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
+        #print_metrics(logger, all_acc, acc, iou, self.CLASSES, num_classes)
+        
+        ###----------------------- 参数初始化 -----------------------##
+        self.metrics = SegmentationMetric(num_classes, kwargs['defect_metric'], kwargs['defect_filter'],
+                                          ignore_index=[0], com_f1=kwargs['com_f1'])
 
-        IoU_defect, Precision, Recall, F1 = defect_metrics(
-            results, gt_seg_maps, ignore_index=self.ignore_index) 
+        ###------------------------- segmentation_batch_eval ------------------------###
+        self.metrics.reset()
+        self.metrics.update_batch_metrics(results, gt_seg_maps, station=[])
+        pixAcc, class_pixAcc, mIoU, class_iou, auc, total_recall, class_recall, total_precision, \
+                    class_precision, total_F1, class_F1 = self.metrics.get_epoch_results()
 
-        # print_log('{} {} {} {}'.format(mIoU, mPrecision, mRecall, mF1), logger)
+        print_defect_metrics(logger, pixAcc, class_pixAcc, class_iou, class_recall, class_precision, class_F1, self.CLASSES, num_classes)
 
-        # summary_str = ''
-        # summary_str += 'per class results:\n'
+        eval_results['mIoU'] = np.nanmean(class_iou)
+        eval_results['mAcc'] = np.nanmean(class_pixAcc)
+        eval_results['aAcc'] = pixAcc
 
-        # line_format = '{:<15} {:>10} {:>10}\n'
-        # summary_str += line_format.format('Class', 'IoU', 'Acc')
-        # if self.CLASSES is None:
-        #     class_names = tuple(range(num_classes))
-        # else:
-        #     class_names = self.CLASSES
-        # for i in range(num_classes):
-        #     iou_str = '{:.2f}'.format(iou[i] * 100)
-        #     acc_str = '{:.2f}'.format(acc[i] * 100)
-        #     summary_str += line_format.format(class_names[i], iou_str, acc_str)
-        # summary_str += 'Summary:\n'
-        # line_format = '{:<15} {:>10} {:>10} {:>10}\n'
-        # summary_str += line_format.format('Scope', 'mIoU', 'mAcc', 'aAcc')
+        eval_results['mPrecision'] = np.nanmean(class_precision)
+        eval_results['mRecall'] = np.nanmean(class_recall)
+        eval_results['mF1'] = np.nanmean(class_F1)   
 
-        # iou_str = '{:.2f}'.format(np.nanmean(iou) * 100)
-        # acc_str = '{:.2f}'.format(np.nanmean(acc) * 100)
-        # all_acc_str = '{:.2f}'.format(all_acc * 100)
-        # summary_str += line_format.format('global', iou_str, acc_str,
-        #                                   all_acc_str)
-        # print_log(summary_str, logger)
-
-    
-        eval_results['mIoU'] = np.nanmean(iou)
-        eval_results['mAcc'] = np.nanmean(acc)
-        eval_results['aAcc'] = all_acc
-
-        eval_results['IoU_defect'] = IoU_defect
-        eval_results['Precision'] = Precision
-        eval_results['Recall'] = Recall
-        eval_results['F1'] = F1   
-
-        return eval_results
+        return  eval_results
 
 
     def __getitem__(self, idx):
