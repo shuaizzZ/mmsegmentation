@@ -6,7 +6,6 @@ import os.path as osp
 
 import torch
 import mmcv
-# from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import build_optimizer, build_runner
 
 from mmseg.core import DistEvalHook, EvalHook
@@ -203,12 +202,12 @@ def trainer_segmentor(model,
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
 
-    ## du blocks
+    ## register WarmUpDUpsampleHook
     if cfg.resume_from is None and cfg.load_from is None:
         runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate))
     ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
-    # trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
-    # runner.register_hook(TrainerLogHook(trainer_log_path))
+    trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
+    runner.register_hook(TrainerLogHook(trainer_log_path), priority='LOWEST')
 
     runner.run(data_loaders, cfg.workflow)
