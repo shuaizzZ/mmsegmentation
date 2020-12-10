@@ -13,7 +13,7 @@ import mmcv
 from mmcv.parallel import is_module_wrapper
 from mmcv.utils import mkdir_or_exist
 from mmcv.runner import HOOKS, Hook
-from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu #, save_checkpoint
+from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu
 from mmcv.runner.dist_utils import allreduce_params, master_only
 
 class CheckRunstateHook(Hook):
@@ -101,13 +101,12 @@ class TrainerCheckpointHook(Hook):
             for name, val in runner.eval_res.items():
                 if runner.best_eval_res[name] < val:
                     runner.best_eval_res[name] = val
-                    trainer_model_path = osp.join(self.out_dir, name +'_best_model.pth.tar')
-                    save_checkpoint(runner.model, trainer_model_path, optimizer=runner.optimizer, meta=runner.meta, config=self.config)               
+                    runner.save_checkpoint(
+                        self.out_dir, save_optimizer=self.save_optimizer,
+                        filename_tmpl=f'{name}_best_model.pth.tar', **self.args)
+
                     runner.logger.info(f'Saving {name}_best checkpoint at {runner.epoch + 1} epochs')
-                    
-        # trainer_model_path = osp.join(self.out_dir, 'F1_best_model.pth.tar')
-        # save_checkpoint(runner.model, trainer_model_path,
-        #                 optimizer=runner.optimizer, meta=runner.meta, config=self.config)
+
         if runner.meta is not None:
             if self.by_epoch:
                 cur_ckpt_filename = self.args.get(
