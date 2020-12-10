@@ -1,6 +1,24 @@
 
 import torch
 import torch.nn as nn
+from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+
+def int_size(x):
+    size = tuple(int(s) for s in x.size())
+    return size
+
+def parallel_model(model, gpu_ids, distributed, find_unused_parameters=False):
+    # put model on gpus
+    if distributed:
+        model = MMDistributedDataParallel(
+            model.cuda(),
+            device_ids=[torch.cuda.current_device()],
+            broadcast_buffers=False,
+            find_unused_parameters=find_unused_parameters)
+    else:
+        model = MMDataParallel(
+            model.cuda(gpu_ids[0]), device_ids=gpu_ids)
+    return model
 
 class Mix2Pooling(nn.Module):
     def __init__(self, size):

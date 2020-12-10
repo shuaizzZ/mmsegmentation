@@ -1,12 +1,9 @@
+
 import torch
 from torch import nn as nn
+from .custom_blocks import int_size
+from ..builder import build_loss
 
-# 暂时放在这，以后要放到工具中
-def int_size(x):
-    size = []
-    for i in x.size():
-        size.append(int(i))
-    return size
 
 class DUpsamplingBlock(nn.Module):
     def __init__(self, inplanes, scale, num_class=21, pad=0):
@@ -16,46 +13,9 @@ class DUpsamplingBlock(nn.Module):
         self.num_class = num_class
         self.pad = pad
         ## W matrix
-        self.conv_w = nn.Conv2d(inplanes, num_class * scale * scale, kernel_size=1, padding=pad, bias=False)
-        self.T = torch.nn.Parameter(torch.Tensor([1.00]))  # softmax with temperature
-
-    # 必须这么实现，否则self.conv_p 清除不掉的！！！
-    def get_conv_p(self):
-        ## TODO
-        ## P matrix
         NSS = self.num_class * self.scale * self.scale
-        conv_p = nn.Conv2d(NSS, self.inplanes, kernel_size=1, padding=self.pad, bias=False)
-        return conv_p
-
-    def mirror_process(self, mask, device_ids=0):
-        N, C, H, W = int_size(mask)
-        C = self.num_class
-        # N, C, H, W
-        #mask = torch.unsqueeze(mask, dim=1)
-        sample = torch.zeros(N, C, H, W).cuda(device_ids)
-
-        # 必须要把255这个标签去掉，否则下面scatter_会出错(但不在这里报错)
-        mask[mask > C] = 0
-        seggt_onehot = sample.scatter_(1, mask, 1)
-
-        # N, H, W, C
-        seggt_onehot = seggt_onehot.permute(0, 2, 3, 1)
-
-        # N, H, W/sacle, C*scale
-        WdC, CmS = int(W / self.scale), int(C * self.scale)
-        seggt_onehot = seggt_onehot.contiguous()
-        seggt_onehot = seggt_onehot.view((N, H, WdC, CmS))
-
-        # N, W/sacle, H, C*scale
-        seggt_onehot = seggt_onehot.permute(0, 2, 1, 3)
-
-        # N, W/sacle, H/sacle, C*scale
-        HdC, CmSS = int(H / self.scale), int(C * self.scale * self.scale)
-        seggt_onehot = seggt_onehot.contiguous().view((N, WdC, HdC, CmSS))
-
-        # N, C*scale*scale, H/sacle, W/sacle
-        seggt_onehot = seggt_onehot.permute(0, 3, 2, 1)
-        return seggt_onehot
+        self.conv_w = nn.Conv2d(inplanes, NSS, kernel_size=1, padding=pad, bias=False)
+        self.T = torch.nn.Parameter(torch.Tensor([1.00]))  # softmax with temperature
 
     def forward_process(self, x):
         # N, C, H, W = x.size()
@@ -84,3 +44,55 @@ class DUpsamplingBlock(nn.Module):
         x = self.forward_process(x)
         x = x / self.T
         return x
+
+
+class MirrorDUpsamplingBlock(nn.Module):
+    def __init__(self, du_block, loss_cfg=dict(type='MSELoss')):
+        super(MirrorDUpsamplingBlock, self).__init__()
+        self.inplanes = du_block.inplanes
+        self.scale = du_block.scale
+        self.num_class = du_block.num_class
+        self.pad = du_block.pad
+        self.conv_w = du_block.conv_w
+        ## P matrix
+        NSS = self.num_class * self.scale * self.scale
+        self.conv_p = nn.Conv2d(NSS, self.inplanes, kernel_size=1, padding=self.pad, bias=False)
+        self.loss_du = build_loss(loss_cfg)
+
+    def mirror_process(self, mask):
+        N, _, H, W = int_size(mask)  # N, 1, H, W
+        C = self.num_class
+
+        # N, C, H, W
+        sample = torch.zeros(N, C, H, W).cuda(mask.device.index)
+
+        # 必须要把255这个标签去掉，否则下面scatter_会出错(但不在这里报错)
+        mask[mask > C] = 0
+        seggt_onehot = sample.scatter_(1, mask, 1)
+
+        # N, H, W, C
+        seggt_onehot = seggt_onehot.permute(0, 2, 3, 1)
+
+        # N, H, W/sacle, C*scale
+        WdC, CmS = int(W / self.scale), int(C * self.scale)
+        seggt_onehot = seggt_onehot.contiguous()
+        seggt_onehot = seggt_onehot.view((N, H, WdC, CmS))
+
+        # N, W/sacle, H, C*scale
+        seggt_onehot = seggt_onehot.permute(0, 2, 1, 3)
+
+        # N, W/sacle, H/sacle, C*scale
+        HdC, CmSS = int(H / self.scale), int(C * self.scale * self.scale)
+        seggt_onehot = seggt_onehot.contiguous().view((N, WdC, HdC, CmSS))
+
+        # N, C*scale*scale, H/sacle, W/sacle
+        seggt_onehot = seggt_onehot.permute(0, 3, 2, 1)
+        return seggt_onehot
+
+    def forward(self, seggt):
+        seggt_onehot = self.mirror_process(seggt)
+        seggt_onehot_reconstructed = self.conv_p(seggt_onehot)
+        seggt_onehot_reconstructed = self.conv_w(seggt_onehot_reconstructed)
+        loss = self.loss_du(seggt_onehot, seggt_onehot_reconstructed)
+
+        return loss

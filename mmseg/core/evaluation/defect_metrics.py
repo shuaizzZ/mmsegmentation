@@ -17,7 +17,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os.path as osp
 from pandas import DataFrame
-from encoding.utils.files import *
 
 import sklearn
 from sklearn import metrics

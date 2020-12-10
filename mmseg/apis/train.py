@@ -6,11 +6,11 @@ import os.path as osp
 
 import torch
 import mmcv
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+# from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import build_optimizer, build_runner
 
 from mmseg.core import DistEvalHook, EvalHook
-from mmseg.core import UpsampleHook
+from mmseg.models.utils import parallel_model, WarmUpDUpsampleHook
 from mmseg.datasets import build_dataloader, build_dataset
 from mmseg.utils import get_root_logger
 
@@ -60,18 +60,8 @@ def train_segmentor(model,
     ]
 
     # put model on gpus
-    if distributed:
-        find_unused_parameters = cfg.get('find_unused_parameters', False)
-        # Sets the `find_unused_parameters` parameter in
-        # torch.nn.parallel.DistributedDataParallel
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False,
-            find_unused_parameters=find_unused_parameters)
-    else:
-        model = MMDataParallel(
-            model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
+    find_unused_parameters = cfg.get('find_unused_parameters', False)
+    model = parallel_model(model, cfg.gpu_ids, distributed, find_unused_parameters)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
@@ -121,7 +111,7 @@ def train_segmentor(model,
 
     ## du blocks
     if cfg.resume_from is None and cfg.load_from is None:
-        runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
+        runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed))
 
     runner.run(data_loaders, cfg.workflow)
 
@@ -135,8 +125,9 @@ def trainer_segmentor(model,
                     meta=None,
                     runstate=np.array([1])):
     """Launch segmentor training."""
-    from mmcv.runner import HOOKS
-    from mmseg.utils import CheckRunstateHook, TrainerLogHook, TrainerCheckpointHook, StatisticTextLoggerHook
+    # from mmcv.runner import HOOKS
+    from mmseg.utils import (CheckRunstateHook, TrainerLogHook,
+                             TrainerCheckpointHook, StatisticTextLoggerHook)
 
     logger = get_root_logger(cfg.log_level)
 
@@ -155,18 +146,8 @@ def trainer_segmentor(model,
     ]
 
     # put model on gpus
-    if distributed:
-        find_unused_parameters = cfg.get('find_unused_parameters', False)
-        # Sets the `find_unused_parameters` parameter in
-        # torch.nn.parallel.DistributedDataParallel
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False,
-            find_unused_parameters=find_unused_parameters)
-    else:
-        model = MMDataParallel(
-            model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
+    find_unused_parameters = cfg.get('find_unused_parameters', False)
+    model = parallel_model(model, cfg.gpu_ids, distributed, find_unused_parameters)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
@@ -186,13 +167,12 @@ def trainer_segmentor(model,
             work_dir=cfg.work_dir,
             logger=logger,
             meta=meta))
-    ## an ugly walkaround to save config in checkpoint
-    # runner.__setattr__('config', cfg)
+
     ## register hooks
     checkpoint_config = cfg.checkpoint_config
     checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
-    checkpoint_config.setdefault('config', cfg)
-    trainer_checkpoint_hook = mmcv.build_from_cfg(checkpoint_config, HOOKS)
+    checkpoint_config.setdefault('priority', 'LOWEST')
+    trainer_checkpoint_hook = runner.register_hook_from_cfg(checkpoint_config)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    trainer_checkpoint_hook, cfg.log_config,
                                    cfg.get('momentum_config', None))
@@ -225,7 +205,7 @@ def trainer_segmentor(model,
 
     ## du blocks
     if cfg.resume_from is None and cfg.load_from is None:
-        runner.register_hook(UpsampleHook(model, cfg, distributed, runstate))
+        runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate))
     ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
     # trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')

@@ -46,7 +46,6 @@ class AinnoDataset(Dataset):
         self.data_root = data_root
         self.ignore_index = ignore_index
         self.reduce_zero_label = reduce_zero_label
-        self.label_map = None
         self.test_mode = test_mode
         self.img_infos = []
 
@@ -77,7 +76,6 @@ class AinnoDataset(Dataset):
                 sample = dict(filename=osp.join(test_dir, img_name),
                               ann=dict(seg_map=None))
                 self.img_infos.append(sample)
-
 
         self.set_len = len(self.img_infos)
         time.sleep(1)
@@ -142,6 +140,16 @@ class AinnoDataset(Dataset):
         """Place holder to format result to dataset specific output."""
         pass
 
+    def __getitem__(self, idx):
+        if self.test_mode:
+            return self.prepare_test_img(idx)
+        else:
+            return self.prepare_train_img(idx)
+
+    def __len__(self):
+        return self.set_len
+
+
     def get_gt_seg_maps(self):
         """Get ground truth segmentation maps for evaluation."""
         gt_seg_maps = []
@@ -151,10 +159,6 @@ class AinnoDataset(Dataset):
             seg_map = img_info['ann']['seg_map']
             gt_seg_map = mmcv.imread(
                 seg_map, flag='unchanged', backend='pillow')
-            # modify if custom classes
-            if self.label_map is not None:
-                for old_id, new_id in self.label_map.items():
-                    gt_seg_map[gt_seg_map == old_id] = new_id
             if self.reduce_zero_label:
                 # avoid using underflow conversion
                 gt_seg_map[gt_seg_map == 0] = 255
