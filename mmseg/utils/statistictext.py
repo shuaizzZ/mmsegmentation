@@ -127,7 +127,7 @@ class StatisticTextLoggerHook(LoggerHook):
                 continue
             if isinstance(val, float):
                 val = f'{val:.4f}'
-            log_items.append(f'{name}: {val}')
+            log_items.append(f'\n{name}: {val}')
         log_str += ', '.join(log_items)
 
         runner.logger.info(log_str)
