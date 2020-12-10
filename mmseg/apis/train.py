@@ -125,8 +125,9 @@ def trainer_segmentor(model,
                     meta=None,
                     runstate=np.array([1])):
     """Launch segmentor training."""
-    from mmcv.runner import HOOKS
-    from mmseg.utils import CheckRunstateHook, TrainerLogHook, TrainerCheckpointHook, StatisticTextLoggerHook
+    # from mmcv.runner import HOOKS
+    from mmseg.utils import (CheckRunstateHook, TrainerLogHook,
+                             TrainerCheckpointHook, StatisticTextLoggerHook)
 
     logger = get_root_logger(cfg.log_level)
 
@@ -170,7 +171,8 @@ def trainer_segmentor(model,
     ## register hooks
     checkpoint_config = cfg.checkpoint_config
     checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
-    trainer_checkpoint_hook = mmcv.build_from_cfg(checkpoint_config, HOOKS)
+    checkpoint_config.setdefault('priority', 'LOWEST')
+    trainer_checkpoint_hook = runner.register_hook_from_cfg(checkpoint_config)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    trainer_checkpoint_hook, cfg.log_config,
                                    cfg.get('momentum_config', None))
