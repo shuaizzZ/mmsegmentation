@@ -51,10 +51,12 @@ class StatisticTextLoggerHook(LoggerHook):
             self._dump_log(runner.meta, runner)
 
     def after_train_iter(self, runner):
-        if self.by_epoch and self.end_of_epoch(runner): # and not self.ignore_last:
-            # not precise but more stable
-            runner.log_buffer.average()    
+        if self.by_epoch and self.end_of_epoch(runner) and self.every_n_epochs(runner, self.interval):
+            runner.log_buffer.average(self.interval)
         elif not self.by_epoch and self.every_n_iters(runner, self.interval):
+            runner.log_buffer.average(self.interval)
+        elif self.end_of_epoch(runner) and not self.ignore_last:
+            # not precise but more stable
             runner.log_buffer.average(self.interval)
 
         if runner.log_buffer.ready:

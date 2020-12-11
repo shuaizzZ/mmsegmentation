@@ -36,6 +36,7 @@ class TrainerLogHook(Hook):
         
     def after_train_epoch(self, runner):
         log_info = [runner.epoch, runner.log_buffer.output['mIoU']]
+        log_info = [runner.epoch, np.nanmean(runner.log_buffer.output['IoU'])]
         self.log_csv.append(log_info)
 
 
