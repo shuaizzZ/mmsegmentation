@@ -31,7 +31,7 @@ class TrainerLogHook(Hook):
         if os.path.isfile(trainer_log_path):
             os.remove(trainer_log_path)
         self.log_csv = CSV(trainer_log_path)
-        log_head = ['epoch', 'iou']
+        log_head = ['epoch', 'mF1']
         self.log_csv.append(log_head)
         
     def after_train_epoch(self, runner):
