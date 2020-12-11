@@ -6,7 +6,7 @@ model = dict(
     decode_head=dict(num_classes=150), auxiliary_head=dict(num_classes=150))
 test_cfg = dict(mode='whole')
 
-du_config = dict(
+warmup_du_cfg = dict(
     interval=200,
     optimizer=dict(type='SGD', lr=0.002),
     total_runs=1000,
