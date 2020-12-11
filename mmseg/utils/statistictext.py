@@ -9,6 +9,7 @@ import torch.distributed as dist
 import mmcv
 from mmcv.runner import HOOKS
 from mmcv.runner.hooks.logger.base import LoggerHook
+from .print_log import print_defect_metrics, print_defect_loss
 
 
 @HOOKS.register_module()
@@ -74,7 +75,7 @@ class StatisticTextLoggerHook(LoggerHook):
     def _log_info(self, log_dict, runner):
         # print exp name for users to distinguish experiments
         # at every ``interval_exp_name`` iterations and the end of each epoch
-        if runner.meta is not None and 'exp_name' in runner.meta:
+        if log_dict['mode'] == 'train'and runner.meta is not None and 'exp_name' in runner.meta:
             if (self.every_n_iters(runner, self.interval_exp_name)) or (
                     self.by_epoch and self.end_of_epoch(runner)):
                 exp_info = f'Exp name: {runner.meta["exp_name"]}'
@@ -108,27 +109,16 @@ class StatisticTextLoggerHook(LoggerHook):
                            f'data_time: {log_dict["data_time"]:.3f}, '
                 # statistic memory
                 if torch.cuda.is_available():
-                    log_str += f'memory: {log_dict["memory"]}, '
+                    log_str += f'memory: {log_dict["memory"]} \n'
+                
+                log_str += print_defect_loss(log_dict)
         else:
             if self.by_epoch:
                 log_str = f'Epoch({log_dict["mode"]}) ' \
                     f'[{log_dict["epoch"]}/{runner.max_epochs}]\t'
+                log_str += print_defect_metrics(log_dict, CLASSES=log_dict['ClassName'])
             else:
                 log_str = f'Iter({log_dict["mode"]}) [{log_dict["iter"]}]\t'
-
-        log_items = []
-        for name, val in log_dict.items():
-            # TODO: resolve this hack
-            # these items have been in log_str
-            if name in [
-                    'mode', 'Epoch', 'iter', 'lr', 'time', 'data_time',
-                    'memory', 'epoch'
-            ]:
-                continue
-            if isinstance(val, float):
-                val = f'{val:.4f}'
-            log_items.append(f'\n{name}: {val}')
-        log_str += ', '.join(log_items)
 
         runner.logger.info(log_str)
 

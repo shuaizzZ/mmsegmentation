@@ -171,7 +171,7 @@ def trainer_segmentor(model,
     ## register hooks
     checkpoint_config = cfg.checkpoint_config
     checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
-    checkpoint_config.setdefault('priority', 'LOWEST')
+    checkpoint_config.setdefault('priority', 'VERY_LOW')
     trainer_checkpoint_hook = runner.register_hook_from_cfg(checkpoint_config)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    trainer_checkpoint_hook, cfg.log_config,
@@ -196,7 +196,7 @@ def trainer_segmentor(model,
         eval_cfg['defect_filter'] = cfg.defect_filter         
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg),'VERY_LOW')
+        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))#,'VERY_LOW'
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
