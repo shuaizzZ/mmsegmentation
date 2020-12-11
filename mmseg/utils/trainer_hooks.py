@@ -33,7 +33,7 @@ class TrainerLogHook(Hook):
         self.log_csv = CSV(trainer_log_path)
 
     def before_run(self, runner):
-        runner.best_metrics = ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1']
+        runner.best_metrics = ['mIoU', 'pixAcc', 'total_precision', 'total_recall', 'total_F1']
         log_head = ['epoch'] + runner.best_metrics
 
         self.log_csv.append(log_head)
@@ -87,7 +87,7 @@ class TrainerCheckpointHook(Hook):
         self.sync_buffer = sync_buffer
 
     def before_run(self, runner):
-        runner.best_metrics = ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1'] #['IoU', 'Acc', 'Recall', 'Precision', 'F1']
+        runner.best_metrics = ['mIoU', 'pixAcc', 'total_precision', 'total_recall', 'total_F1'] #['IoU', 'Acc', 'Recall', 'Precision', 'F1']
         runner.best_eval_res = {}
         runner.cur_eval_res = {}
         for name in runner.best_metrics:

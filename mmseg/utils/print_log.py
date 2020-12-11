@@ -27,7 +27,7 @@ def print_metrics(logger, all_acc, acc, iou, CLASSES=None, num_classes=2):
     print_log(summary_str, logger)
     
 def print_defect_metrics(log_dict, CLASSES=None, num_classes=2):
-    all_acc, acc, iou, recall, precision, f1 = log_dict['aAcc'], log_dict['Acc'], log_dict['IoU'], log_dict['Recall'], log_dict['Precision'], log_dict['F1']
+    all_acc, acc, iou, recall, precision, f1 = log_dict['pixAcc'], log_dict['Acc'], log_dict['IoU'], log_dict['Recall'], log_dict['Precision'], log_dict['F1']
     summary_str = ''
     summary_str += 'per class results:\n'
 
@@ -46,7 +46,7 @@ def print_defect_metrics(log_dict, CLASSES=None, num_classes=2):
         summary_str += line_format.format(class_names[i], iou_str, acc_str, recall_str, precision_str, f1_str)
         
     best_iou_str = '{:.2f}'.format(log_dict['best_pred_mIoU'][0] * 100) + '/' + str(log_dict['best_pred_mIoU'][1])
-    best_acc_str = '{:.2f}'.format(log_dict['best_pred_aAcc'][0] * 100) + '/' + str(log_dict['best_pred_aAcc'][1])
+    best_acc_str = '{:.2f}'.format(log_dict['best_pred_pixAcc'][0] * 100) + '/' + str(log_dict['best_pred_pixAcc'][1])
     best_recall_str = '{:.2f}'.format(log_dict['best_pred_total_recall'][0] * 100) + '/' + str(log_dict['best_pred_total_recall'][1])
     best_precision_str = '{:.2f}'.format(log_dict['best_pred_total_precision'][0] * 100) + '/' + str(log_dict['best_pred_total_precision'][1])
     best_f1_str = '{:.2f}'.format(log_dict['best_pred_total_F1'][0] * 100) + '/' + str(log_dict['best_pred_total_F1'][1])       

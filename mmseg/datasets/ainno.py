@@ -214,7 +214,7 @@ class AinnoDataset(Dataset):
         eval_results['ClassName'] = self.CLASSES
         eval_results['IoU'] = class_iou
         eval_results['Acc'] = class_pixAcc
-        eval_results['aAcc'] = pixAcc
+        eval_results['pixAcc'] = pixAcc
 
         eval_results['Precision'] = class_precision
         eval_results['Recall'] = class_recall
