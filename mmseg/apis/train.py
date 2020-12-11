@@ -190,10 +190,7 @@ def trainer_segmentor(model,
             dist=distributed,
             shuffle=False)         
         eval_cfg = cfg.get('evaluation', {})
-        ## 度量指标
-        eval_cfg['com_f1'] = cfg.com_f1
-        eval_cfg['defect_metric'] = cfg.defect_metric
-        eval_cfg['defect_filter'] = cfg.defect_filter         
+        ## 度量指标      
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))#,'VERY_LOW'
