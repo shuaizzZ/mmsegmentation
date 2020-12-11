@@ -15,6 +15,7 @@ from mmcv.utils import mkdir_or_exist
 from mmcv.runner import HOOKS, Hook
 from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu
 from mmcv.runner.dist_utils import allreduce_params, master_only
+import numpy as np
 
 class CheckRunstateHook(Hook):
     def __init__(self, runstate):
@@ -83,7 +84,6 @@ class TrainerCheckpointHook(Hook):
     def after_train_epoch(self, runner):
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
             return
-
         # runner.logger.info(f'Saving checkpoint at {runner.epoch + 1} epochs')
         if self.sync_buffer:
             allreduce_params(runner.model.buffers())
@@ -97,16 +97,26 @@ class TrainerCheckpointHook(Hook):
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
         if runner.epoch == 0:
-            runner.best_eval_res = runner.eval_res
+            # runner.best_eval_res = runner.log_buffer.output.copy()
+            runner.best_eval_res = {}
+            for name, val in runner.log_buffer.output.items():
+                if name in ['IoU', 'Acc', 'Recall', 'Precision', 'F1']:
+                    runner.best_eval_res[name] = [np.nanmean(val), runner.epoch]
+            for name, val in runner.best_eval_res.items():
+                runner.log_buffer.output['best_pred_'+name] = runner.best_eval_res[name]
         else:
-            for name, val in runner.eval_res.items():
-                if runner.best_eval_res[name] < val:
-                    runner.best_eval_res[name] = val
+            for name, val in runner.best_eval_res.items():
+                if name not in ['IoU', 'Acc', 'Recall', 'Precision', 'F1']:         
+                    continue
+                cur_val = np.nanmean(runner.log_buffer.output[name])
+                if val[0] < cur_val:
+                    runner.best_eval_res[name] = [cur_val, runner.epoch]
                     runner.save_checkpoint(
                         self.out_dir, save_optimizer=self.save_optimizer,
                         filename_tmpl=f'{name}_best_model.pth.tar', **self.args)
 
                     runner.logger.info(f'Saving {name}_best checkpoint at {runner.epoch + 1} epochs')
+                runner.log_buffer.output['best_pred_'+name] = runner.best_eval_res[name]
 
         if runner.meta is not None:
             if self.by_epoch:

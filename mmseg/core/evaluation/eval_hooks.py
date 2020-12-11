@@ -26,7 +26,7 @@ class EvalHook(Hook):
         if self.by_epoch or not self.every_n_iters(runner, self.interval):
             return
         from mmseg.apis import single_gpu_test
-        # runner.log_buffer.clear()
+        runner.log_buffer.clear()
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
 
@@ -35,7 +35,7 @@ class EvalHook(Hook):
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
             return
         from mmseg.apis import single_gpu_test
-        # runner.log_buffer.clear()
+        runner.log_buffer.clear()
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
 
@@ -43,10 +43,9 @@ class EvalHook(Hook):
         """Call evaluate function of dataset."""
         eval_res = self.dataloader.dataset.evaluate(
             results, logger=runner.logger, **self.eval_kwargs)
-        runner.eval_res = eval_res
-        # for name, val in eval_res.items():
-        #     runner.log_buffer.output[name] = val
-        # runner.log_buffer.ready = True
+        for name, val in eval_res.items():
+            runner.log_buffer.output[name] = val
+        runner.log_buffer.ready = True
 
 
 class DistEvalHook(EvalHook):

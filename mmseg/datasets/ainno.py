@@ -10,7 +10,7 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from mmseg.core import mean_iou, SegmentationMetric
-from mmseg.utils import get_root_logger, print_metrics, print_defect_metrics
+from mmseg.utils import get_root_logger, print_metrics
 
 from torch.utils.data import Dataset
 from .pipelines import Compose
@@ -211,15 +211,14 @@ class AinnoDataset(Dataset):
         pixAcc, class_pixAcc, mIoU, class_iou, auc, total_recall, class_recall, total_precision, \
                     class_precision, total_F1, class_F1 = self.metrics.get_epoch_results()
 
-        print_defect_metrics(logger, pixAcc, class_pixAcc, class_iou, class_recall, class_precision, class_F1, self.CLASSES, num_classes)
-
-        eval_results['mIoU'] = np.nanmean(class_iou)
-        eval_results['mAcc'] = np.nanmean(class_pixAcc)
+        eval_results['ClassName'] = self.CLASSES
+        eval_results['IoU'] = class_iou
+        eval_results['Acc'] = class_pixAcc
         eval_results['aAcc'] = pixAcc
 
-        eval_results['mPrecision'] = np.nanmean(class_precision)
-        eval_results['mRecall'] = np.nanmean(class_recall)
-        eval_results['mF1'] = np.nanmean(class_F1)   
+        eval_results['Precision'] = class_precision
+        eval_results['Recall'] = class_recall
+        eval_results['F1'] = class_F1
 
         return  eval_results
 
