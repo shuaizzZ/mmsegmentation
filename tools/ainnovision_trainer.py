@@ -57,10 +57,9 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
                             mmcfg._cfg_dict, [para])
 
     # metrics
-    mmcfg.com_f1 = mvcfg.VAL.COM_F1
-    mmcfg.defect_metric = mvcfg.VAL.METRIC
-    mmcfg.defect_filter = mvcfg.VAL.DEFECT_FILTER    
-
+    mmcfg.evaluation.com_f1 = mvcfg.VAL.COM_F1
+    mmcfg.evaluation.defect_metric = mvcfg.VAL.METRIC
+    mmcfg.evaluation.defect_filter = mvcfg.VAL.DEFECT_FILTER     
     # train label
     mmcfg.labels = mvcfg.DATASETS.LABELS
     mmcfg.num_classes = max(mmcfg.labels)+1
