@@ -31,12 +31,19 @@ class TrainerLogHook(Hook):
         if os.path.isfile(trainer_log_path):
             os.remove(trainer_log_path)
         self.log_csv = CSV(trainer_log_path)
-        log_head = ['epoch', 'mF1']
+
+    def before_run(self, runner):
+        runner.best_metrics = ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1']
+        log_head = ['epoch'] + runner.best_metrics
+
         self.log_csv.append(log_head)
         
     def after_train_epoch(self, runner):
-        log_info = [runner.epoch, runner.log_buffer.output['mIoU']]
-        log_info = [runner.epoch, np.nanmean(runner.log_buffer.output['IoU'])]
+        log_info = [runner.epoch]
+        # runner.cur_eval_res['IoU']
+        for name in runner.best_metrics:
+            log_info.append(runner.cur_eval_res[name])
+
         self.log_csv.append(log_info)
 
 
@@ -70,7 +77,6 @@ class TrainerCheckpointHook(Hook):
                  out_dir=None,
                  max_keep_ckpts=-1,
                  sync_buffer=False,
-                 config=None,
                  **kwargs):
         self.interval = interval
         self.by_epoch = by_epoch
@@ -79,7 +85,14 @@ class TrainerCheckpointHook(Hook):
         self.max_keep_ckpts = max_keep_ckpts
         self.args = kwargs
         self.sync_buffer = sync_buffer
-        self.config = config
+
+    def before_run(self, runner):
+        runner.best_metrics = ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1'] #['IoU', 'Acc', 'Recall', 'Precision', 'F1']
+        runner.best_eval_res = {}
+        runner.cur_eval_res = {}
+        for name in runner.best_metrics:
+            runner.best_eval_res[name] = [0, 0]
+            runner.cur_eval_res[name] = 0
 
     def after_train_epoch(self, runner):
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
@@ -96,27 +109,20 @@ class TrainerCheckpointHook(Hook):
             self.out_dir = runner.work_dir
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
-        if runner.epoch == 0:
-            # runner.best_eval_res = runner.log_buffer.output.copy()
-            runner.best_eval_res = {}
-            for name, val in runner.log_buffer.output.items():
-                if name in ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1']:
-                    runner.best_eval_res[name] = [val, runner.epoch]
-            for name, val in runner.best_eval_res.items():
-                runner.log_buffer.output['best_pred_'+name] = runner.best_eval_res[name]
-        else:
-            for name, val in runner.best_eval_res.items():
-                if name not in ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1']:         
-                    continue
-                cur_val = runner.log_buffer.output[name]
-                if val[0] < cur_val:
-                    runner.best_eval_res[name] = [cur_val, runner.epoch]
-                    runner.save_checkpoint(
-                        self.out_dir, save_optimizer=self.save_optimizer,
-                        filename_tmpl=f'{name}_best_model.pth.tar', **self.args)
 
-                    runner.logger.info(f'Saving {name}_best checkpoint at {runner.epoch + 1} epochs')
-                runner.log_buffer.output['best_pred_'+name] = runner.best_eval_res[name]
+        for name, val in runner.best_eval_res.items():
+            if name not in runner.best_metrics:
+                continue
+            cur_val = runner.log_buffer.output[name]
+            runner.cur_eval_res[name] = cur_val
+            if val[0] <= cur_val:
+                runner.best_eval_res[name] = [cur_val, runner.epoch]
+                runner.save_checkpoint(
+                    self.out_dir, save_optimizer=self.save_optimizer,
+                    filename_tmpl=f'{name}_best_model.pth.tar', **self.args)
+
+                runner.logger.info(f'Saving {name}_best checkpoint at {runner.epoch + 1} epochs')
+            runner.log_buffer.output['best_pred_'+name] = runner.best_eval_res[name]
 
         if runner.meta is not None:
             if self.by_epoch:
