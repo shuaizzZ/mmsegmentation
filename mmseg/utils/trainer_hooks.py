@@ -100,15 +100,15 @@ class TrainerCheckpointHook(Hook):
             # runner.best_eval_res = runner.log_buffer.output.copy()
             runner.best_eval_res = {}
             for name, val in runner.log_buffer.output.items():
-                if name in ['IoU', 'Acc', 'Recall', 'Precision', 'F1']:
-                    runner.best_eval_res[name] = [np.nanmean(val), runner.epoch]
+                if name in ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1']:
+                    runner.best_eval_res[name] = [val, runner.epoch]
             for name, val in runner.best_eval_res.items():
                 runner.log_buffer.output['best_pred_'+name] = runner.best_eval_res[name]
         else:
             for name, val in runner.best_eval_res.items():
-                if name not in ['IoU', 'Acc', 'Recall', 'Precision', 'F1']:         
+                if name not in ['mIoU', 'aAcc', 'total_precision', 'total_recall', 'total_F1']:         
                     continue
-                cur_val = np.nanmean(runner.log_buffer.output[name])
+                cur_val = runner.log_buffer.output[name]
                 if val[0] < cur_val:
                     runner.best_eval_res[name] = [cur_val, runner.epoch]
                     runner.save_checkpoint(

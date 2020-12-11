@@ -220,6 +220,11 @@ class AinnoDataset(Dataset):
         eval_results['Recall'] = class_recall
         eval_results['F1'] = class_F1
 
+        eval_results['mIoU'] = mIoU
+        eval_results['total_precision'] = total_precision
+        eval_results['total_recall'] = total_recall
+        eval_results['total_F1'] = total_F1    
+
         return  eval_results
 
 
