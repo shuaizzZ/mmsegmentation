@@ -106,10 +106,11 @@ class TrainerCheckpointHook(Hook):
             self.out_dir = runner.work_dir
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
+
         for name, val in runner.best_eval_res.items():
             if name not in runner.best_metrics:
                 continue
-            cur_val = np.nanmean(runner.log_buffer.output[name])
+            cur_val = runner.log_buffer.output[name]['mean']
             runner.cur_eval_res[name] = cur_val
             if val[0] <= cur_val:
                 runner.best_eval_res[name] = [cur_val, runner.epoch]
