@@ -10,7 +10,7 @@ from mmcv.runner import init_dist
 from mmcv.utils import Config, DictAction, get_git_hash
 
 from mmseg import __version__
-from mmseg.apis import set_random_seed, train_segmentor
+from mmseg.apis import set_random_seed, train_segmentor, trainer_segmentor
 from mmseg.datasets import build_dataset
 from mmseg.models import build_segmentor
 from mmseg.utils import collect_env, get_root_logger
@@ -21,7 +21,8 @@ def parse_args():
     parser.add_argument(
         '--config',
         # default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
-        default='../configs/pspnet/pspnet_r50-d8_yantai_st12.py',
+        # default='../configs/pspnet/dupsp_r18_yantai_st12.py',
+        default='../configs/pspnet/dupsp_r18_ainno.py',
         help='train config file path')
     parser.add_argument(
         '--work-dir',
@@ -169,7 +170,7 @@ def main():
             PALETTE=datasets[0].PALETTE)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
-    train_segmentor(
+    trainer_segmentor(
         model,
         datasets,
         cfg,
