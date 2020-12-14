@@ -33,17 +33,14 @@ class TrainerLogHook(Hook):
         self.log_csv = CSV(trainer_log_path)
 
     def before_run(self, runner):
-        runner.best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1']
         log_head = ['epoch'] + runner.best_metrics
-
         self.log_csv.append(log_head)
-        
+
     def after_train_epoch(self, runner):
         log_info = [runner.epoch]
         runner.cur_eval_res['IoU']
         for name in runner.best_metrics:
             log_info.append(runner.cur_eval_res[name])
-
         self.log_csv.append(log_info)
 
 

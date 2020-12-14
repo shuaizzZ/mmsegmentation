@@ -12,7 +12,6 @@ from torch.utils.data import Dataset
 from mmseg.core import mean_iou, SegmentationMetric
 from mmseg.utils import get_root_logger, print_metrics
 
-from torch.utils.data import Dataset
 from .pipelines import Compose
 from .builder import DATASETS
 
@@ -24,6 +23,7 @@ class AinnoDataset(Dataset):
     def __init__(self,
                  pipeline,
                  classes=None,
+                 labels=None,
                  split='train',
                  test_mode=None,
                  dataset='',
@@ -37,6 +37,7 @@ class AinnoDataset(Dataset):
             self.CLASSES = classes
         else:
             self.CLASSES = CLASSES
+        self.labels=labels
         self.PALETTE = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
                    [128, 0, 128], ]
         self.pipeline = Compose(pipeline)
@@ -154,11 +155,12 @@ class AinnoDataset(Dataset):
         """Get ground truth segmentation maps for evaluation."""
         gt_seg_maps = []
         for img_info in self.img_infos:
-            # TODO
-            # seg_map = osp.join(self.ann_dir, img_info['ann']['seg_map'])
             seg_map = img_info['ann']['seg_map']
             gt_seg_map = mmcv.imread(
                 seg_map, flag='unchanged', backend='pillow')
+            for i, label in enumerate(self.labels):
+                if label != i:
+                    gt_seg_map[gt_seg_map==i] = label
             if self.reduce_zero_label:
                 # avoid using underflow conversion
                 gt_seg_map[gt_seg_map == 0] = 255
