@@ -21,7 +21,8 @@ def parse_args():
     parser.add_argument(
         '--config',
         # default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
-        default='../configs/pspnet/pspnet_r50-d8_yantai_st12.py',
+        # default='../configs/pspnet/dupsp_r18_yantai_st12.py',
+        default='../configs/pspnet/dupsp_r18_ainno.py',
         help='train config file path')
     parser.add_argument(
         '--work-dir',
