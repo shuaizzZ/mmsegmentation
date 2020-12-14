@@ -33,14 +33,14 @@ class TrainerLogHook(Hook):
         self.log_csv = CSV(trainer_log_path)
 
     def before_run(self, runner):
-        runner.best_metrics = ['mIoU', 'pixAcc', 'total_precision', 'total_recall', 'total_F1']
+        runner.best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1']
         log_head = ['epoch'] + runner.best_metrics
 
         self.log_csv.append(log_head)
         
     def after_train_epoch(self, runner):
         log_info = [runner.epoch]
-        # runner.cur_eval_res['IoU']
+        runner.cur_eval_res['IoU']
         for name in runner.best_metrics:
             log_info.append(runner.cur_eval_res[name])
 
@@ -87,7 +87,7 @@ class TrainerCheckpointHook(Hook):
         self.sync_buffer = sync_buffer
 
     def before_run(self, runner):
-        runner.best_metrics = ['mIoU', 'pixAcc', 'total_precision', 'total_recall', 'total_F1'] #['IoU', 'Acc', 'Recall', 'Precision', 'F1']
+        runner.best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1']
         runner.best_eval_res = {}
         runner.cur_eval_res = {}
         for name in runner.best_metrics:
@@ -113,7 +113,7 @@ class TrainerCheckpointHook(Hook):
         for name, val in runner.best_eval_res.items():
             if name not in runner.best_metrics:
                 continue
-            cur_val = runner.log_buffer.output[name]
+            cur_val = runner.log_buffer.output[name]['mean']
             runner.cur_eval_res[name] = cur_val
             if val[0] <= cur_val:
                 runner.best_eval_res[name] = [cur_val, runner.epoch]

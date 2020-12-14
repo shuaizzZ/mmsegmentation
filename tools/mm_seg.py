@@ -143,6 +143,7 @@ data = dict(
         dataset=dataset,
         data_root=data_root,
         classes=classes,
+        ignore_index = 0,
         split='val',
         test_mode=False,
         pipeline=val_pipeline),

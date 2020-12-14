@@ -203,27 +203,14 @@ class AinnoDataset(Dataset):
         
         ###----------------------- 参数初始化 -----------------------##
         self.metrics = SegmentationMetric(num_classes, kwargs['defect_metric'], kwargs['defect_filter'],
-                                          ignore_index=[0], com_f1=kwargs['com_f1'])
+                                          ignore_index=[self.ignore_index], com_f1=kwargs['com_f1'])
 
         ###------------------------- segmentation_batch_eval ------------------------###
         self.metrics.reset()
         self.metrics.update_batch_metrics(results, gt_seg_maps, station=[])
-        pixAcc, class_pixAcc, mIoU, class_iou, auc, total_recall, class_recall, total_precision, \
-                    class_precision, total_F1, class_F1 = self.metrics.get_epoch_results()
+        eval_results['Acc'], eval_results['IoU'], auc, eval_results['Recall'], eval_results['Precision'], eval_results['F1'] = self.metrics.get_epoch_results()
 
-        eval_results['ClassName'] = self.CLASSES
-        eval_results['IoU'] = class_iou
-        eval_results['Acc'] = class_pixAcc
-        eval_results['pixAcc'] = pixAcc
-
-        eval_results['Precision'] = class_precision
-        eval_results['Recall'] = class_recall
-        eval_results['F1'] = class_F1
-
-        eval_results['mIoU'] = mIoU
-        eval_results['total_precision'] = total_precision
-        eval_results['total_recall'] = total_recall
-        eval_results['total_F1'] = total_F1    
+        eval_results['ClassName'] = self.CLASSES  
 
         return  eval_results
 
