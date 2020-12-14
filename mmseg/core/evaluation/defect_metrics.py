@@ -941,7 +941,7 @@ class SegmentationMetric(object):
         pixAcc = np.sum(self.total_pixel_correct) / (np.sum(self.total_pixel_labeled + self.Cn))
         ## mIoU
         class_iou = self.total_pixel_correct / (self.total_pixel_union + self.Cn)
-        mIoU = class_iou.mean()
+        sum_iou = np.sum(self.total_pixel_correct) / np.sum(self.total_pixel_union + self.Cn)
         ## auc
         auc = segmentation_auc(self.total_scores)
         ## recall, precision, F1
@@ -950,8 +950,24 @@ class SegmentationMetric(object):
         total_F1 = (2 * total_recall * total_precision) / (total_recall + total_precision + self.C1)
         class_F1 = (2 * class_recall * class_precision) / (class_recall + class_precision + self.C1)
 
-        return pixAcc, class_pixAcc, mIoU, class_iou, auc, total_recall, class_recall, \
-               total_precision, class_precision, total_F1, class_F1
+        ignore_index = []
+        for i in self.ignore_index:
+            if i > self.nclass:
+                continue
+            ignore_index.append(i)
+        a_class_iou = np.delete(class_iou,ignore_index)
+        a_class_pixAcc = np.delete(class_pixAcc,ignore_index)
+        a_class_recall = np.delete(class_recall,ignore_index)
+        a_class_precision = np.delete(class_precision,ignore_index)
+        a_class_F1 = np.delete(class_F1,ignore_index)
+
+        iou = dict(val=class_iou, mean=a_class_iou.mean(), sum=sum_iou)
+        acc = dict(val=class_pixAcc, mean=a_class_pixAcc.mean(), sum=pixAcc)
+        recall = dict(val=class_recall, mean=a_class_recall.mean(), sum=total_recall)
+        precision = dict(val=class_precision, mean=a_class_precision.mean(), sum=total_precision)
+        F1 = dict(val=class_F1, mean=a_class_F1.mean(), sum=total_F1)
+
+        return acc, iou, auc, recall, precision, F1
 
     def reset(self):
         self.total_pixel_labeled = np.zeros(self.nclass, np.uint64)
