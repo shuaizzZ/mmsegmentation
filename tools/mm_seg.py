@@ -160,7 +160,7 @@ data = dict(
 
 # ======================================= runtime settings ======================================= #
 log_config = dict(
-   interval=8,
+   interval=1,
    hooks=[
        dict(type='StatisticTextLoggerHook', by_epoch=True),
        #dict(type='TensorboardLoggerHook')
