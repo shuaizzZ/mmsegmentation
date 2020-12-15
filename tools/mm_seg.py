@@ -144,6 +144,7 @@ data = dict(
         dataset=dataset,
         data_root=data_root,
         classes=classes,
+        ignore_index=0,
         labels=labels,
         split='val',
         test_mode=False,
@@ -159,7 +160,7 @@ data = dict(
 
 # ======================================= runtime settings ======================================= #
 log_config = dict(
-   interval=8,
+   interval=1,
    hooks=[
        dict(type='StatisticTextLoggerHook', by_epoch=True),
        #dict(type='TensorboardLoggerHook')

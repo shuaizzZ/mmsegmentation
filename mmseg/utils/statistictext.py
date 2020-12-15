@@ -51,6 +51,16 @@ class StatisticTextLoggerHook(LoggerHook):
             self._dump_log(runner.meta, runner)
 
     def after_train_iter(self, runner):
+        cur_iter = self.get_iter(runner, inner_iter=True)
+        if cur_iter == 1:
+            self.prog_bar = mmcv.ProgressBar(len(runner.data_loader),10)        
+            self.prog_bar.update()
+        elif cur_iter == len(runner.data_loader):
+            self.prog_bar.update()
+            self.prog_bar.file.write('\n')
+        else:
+            self.prog_bar.update()
+        
         if self.by_epoch and self.end_of_epoch(runner) and self.every_n_epochs(runner, self.interval):
             runner.log_buffer.average(self.interval)
         elif not self.by_epoch and self.every_n_iters(runner, self.interval):
