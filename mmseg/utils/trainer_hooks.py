@@ -27,15 +27,18 @@ class CheckRunstateHook(Hook):
 
 
 class TrainerLogHook(Hook):
-    def __init__(self, trainer_log_path):
-        if os.path.isfile(trainer_log_path):
-            os.remove(trainer_log_path)
-        self.log_csv = CSV(trainer_log_path)
+    def __init__(self, trainer_csv_path):
+        self.trainer_csv_path = trainer_csv_path
 
+    @master_only
     def before_run(self, runner):
+        if os.path.isfile(self.trainer_csv_path):
+            os.remove(self.trainer_csv_path)
+        self.log_csv = CSV(self.trainer_csv_path)
         log_head = ['epoch'] + runner.best_metrics
         self.log_csv.append(log_head)
 
+    @master_only
     def after_train_epoch(self, runner):
         log_info = [runner.epoch]
         runner.cur_eval_res['IoU']
