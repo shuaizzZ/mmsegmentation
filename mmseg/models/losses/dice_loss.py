@@ -52,6 +52,61 @@ class DiceLoss(nn.Module):
         target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
         target_onehot.scatter_(1, target.view(N, 1, H, W), 1)  # N,C,H,W
 
+        intersection = torch.sum(pt * target_onehot, dim=1)  # N,H,W
+        union = torch.sum(pt, dim=1) + torch.sum(target_onehot, dim=1)  # N,H,W
+
+        dice_coef = torch.mean((2 * torch.sum(intersection) + self.smooth) /
+                               (torch.sum(union) + self.smooth))
+
+        loss = self.loss_weight * (1 - dice_coef)
+        return loss
+
+
+@LOSSES.register_module()
+class CDiceLoss(nn.Module):
+    """class-wise DiceLoss.
+
+    Args:
+        reduction (str, optional): . Defaults to 'mean'.
+            Options are "none", "mean" and "sum".
+        class_weight (list[float], optional): Weight of each class.
+            Defaults to None.
+        loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
+    """
+
+    def __init__(self,
+                 reduction='mean',
+                 class_weight=None,
+                 loss_weight=1.0):
+        super(CDiceLoss, self).__init__()
+        assert reduction in ('none', 'mean', 'sum')
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+        self.class_weight = class_weight
+        self.smooth = 1e-6
+
+    def forward(self,
+                predict,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                **kwargs):
+        """Forward function."""
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        if self.class_weight is not None:
+            class_weight = torch.tensor(self.class_weight).type_as(predict)
+        else:
+            class_weight = None
+
+        N, C, H, W = predict.size()
+        pt = F.softmax(predict, dim=1) # N,C,H,W
+        ## convert target(N,H,W) into onehot vector (N,C,H,W)
+        target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
+        target_onehot.scatter_(1, target.view(N, 1, H, W), 1)  # N,C,H,W
+
         intersection = torch.sum(pt * target_onehot, dim=(2, 3))  # N, C
         union = torch.sum(pt.pow(2), dim=(2, 3)) + torch.sum(target_onehot, dim=(2, 3))  # N, C
         ## a^2 + b^2 >= 2ab, target_onehot^2 == target_onehot
