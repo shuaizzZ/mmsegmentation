@@ -42,14 +42,14 @@ class DiceLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         if self.class_weight is not None:
-            class_weight = predict.new_tensor(self.class_weight)
+            class_weight = torch.tensor(self.class_weight).type_as(predict)
         else:
             class_weight = None
 
         N, C, H, W = predict.size()
         pt = F.softmax(predict, dim=1) # N,C,H,W
         ## convert target(N,H,W) into onehot vector (N,C,H,W)
-        target_onehot = target.new_tensor(torch.zeros(predict.size()))  # N,C,H,W
+        target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
         target_onehot.scatter_(1, target.view(N, 1, H, W), 1)  # N,C,H,W
 
         intersection = torch.sum(pt * target_onehot, dim=(2, 3))  # N, C
@@ -100,14 +100,14 @@ class RecallLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         if self.class_weight is not None:
-            class_weight = predict.new_tensor(self.class_weight)
+            class_weight = torch.tensor(self.class_weight).type_as(predict)
         else:
             class_weight = None
 
         N, C, H, W = predict.size()
         pt = F.softmax(predict, dim=1)  # N,C,H,W
         ## convert target(N,H,W) into onehot vector (N,C,H,W)
-        target_onehot = target.new_tensor(torch.zeros(predict.size()))  # N,C,H,W
+        target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
         target_onehot.scatter_(1, target.view(N, 1, H, W), 1)  # N,C,H,W
 
         true_positive = torch.sum(pt * target_onehot, dim=(2, 3))  # N, C
@@ -160,16 +160,16 @@ class F1Loss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         if self.class_weight is not None:
-            class_weight = predict.new_tensor(self.class_weight)
+            class_weight = torch.tensor(self.class_weight).type_as(predict)
         else:
             class_weight = None
 
         N, C, H, W = predict.size()
         _, maxpred = torch.max(predict, 1)
         # convert predict,target (N,H,W) into one hot vector (N,C,H,W)
-        predict_onehot = maxpred.new_tensor(torch.zeros(predict.size()))  # N,C,H,W
+        predict_onehot = torch.zeros(predict.size()).type_as(maxpred)  # N,C,H,W
         predict_onehot.scatter_(1, maxpred.view(N, 1, H, W), 1)  # N,C,H,W
-        target_onehot = target.new_tensor(torch.zeros(predict.size()))  # N,C,H,W
+        target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
         target_onehot.scatter_(1, target.view(N, 1, H, W), 1)  # N,C,H,W
 
         true_positive = torch.sum(predict_onehot * target_onehot, dim=(2, 3))  # N, C

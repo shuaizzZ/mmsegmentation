@@ -10,7 +10,7 @@ import numpy as np
 from mmcv.utils import print_log
 from torch.utils.data import Dataset
 
-from mmseg.core import mean_iou
+from mmseg.core import mean_iou, SegmentationMetric
 from mmseg.utils import get_root_logger
 
 from torch.utils.data import Dataset
@@ -27,6 +27,7 @@ class YantaiDataset(Dataset):
     def __init__(self,
                  pipeline,
                  classes=None,
+                 labels=None,
                  split='train',
                  test_mode=None,
                  dataset='',
@@ -40,6 +41,7 @@ class YantaiDataset(Dataset):
             self.CLASSES = classes
         else:
             self.CLASSES = CLASSES
+        self.labels = labels
         self.PALETTE = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
                    [128, 0, 128], ]
         self.pipeline = Compose(pipeline)
@@ -232,11 +234,12 @@ class YantaiDataset(Dataset):
         """Get ground truth segmentation maps for evaluation."""
         gt_seg_maps = []
         for img_info in self.img_infos:
-            # TODO
-            # seg_map = osp.join(self.ann_dir, img_info['ann']['seg_map'])
             seg_map = img_info['ann']['seg_map']
             gt_seg_map = mmcv.imread(
                 seg_map, flag='unchanged', backend='pillow')
+            for i, label in enumerate(self.labels):
+                if label != i:
+                    gt_seg_map[gt_seg_map==i] = label
             # modify if custom classes
             if self.label_map is not None:
                 for old_id, new_id in self.label_map.items():
@@ -279,35 +282,23 @@ class YantaiDataset(Dataset):
         else:
             num_classes = len(self.CLASSES)
 
-        all_acc, acc, iou = mean_iou(
-            results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
-        summary_str = ''
-        summary_str += 'per class results:\n'
+        # all_acc, acc, iou = mean_iou(
+        #    results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
+        # print_metrics(logger, all_acc, acc, iou, self.CLASSES, num_classes)
 
-        line_format = '{:<15} {:>10} {:>10}\n'
-        summary_str += line_format.format('Class', 'IoU', 'Acc')
-        if self.CLASSES is None:
-            class_names = tuple(range(num_classes))
-        else:
-            class_names = self.CLASSES
-        for i in range(num_classes):
-            iou_str = '{:.2f}'.format(iou[i] * 100)
-            acc_str = '{:.2f}'.format(acc[i] * 100)
-            summary_str += line_format.format(class_names[i], iou_str, acc_str)
-        summary_str += 'Summary:\n'
-        line_format = '{:<15} {:>10} {:>10} {:>10}\n'
-        summary_str += line_format.format('Scope', 'mIoU', 'mAcc', 'aAcc')
+        ###----------------------- 参数初始化 -----------------------##
+        self.metrics = SegmentationMetric(num_classes, kwargs['defect_metric'], kwargs['defect_filter'],
+                                          ignore_index=[0], com_f1=kwargs['com_f1'])
 
-        iou_str = '{:.2f}'.format(np.nanmean(iou) * 100)
-        acc_str = '{:.2f}'.format(np.nanmean(acc) * 100)
-        all_acc_str = '{:.2f}'.format(all_acc * 100)
-        summary_str += line_format.format('global', iou_str, acc_str,
-                                          all_acc_str)
-        print_log(summary_str, logger)
+        ###------------------------- segmentation_batch_eval ------------------------###
+        self.metrics.reset()
+        for predicts, targets in zip(results, gt_seg_maps):
+            predicts = np.expand_dims(predicts, 0)
+            targets = np.expand_dims(targets, 0)
+            self.metrics.update_batch_metrics(predicts, targets)
+        eval_results['Acc'], eval_results['IoU'], eval_results['Recall'], eval_results['Precision'], eval_results['F1'] = self.metrics.get_epoch_results()
 
-        eval_results['mIoU'] = np.nanmean(iou)
-        eval_results['mAcc'] = np.nanmean(acc)
-        eval_results['aAcc'] = all_acc
+        eval_results['ClassName'] = self.CLASSES
 
         return eval_results
 

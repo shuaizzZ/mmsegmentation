@@ -6,10 +6,12 @@ optimizer_config = dict()
 # learning policy
 # lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=False)
 lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
-                 warmup='linear', warmup_iters=600, warmup_ratio=0.1,
-                 warmup_by_epoch=False)
+                 warmup='linear', warmup_iters=8, warmup_ratio=0.01,
+                 warmup_by_epoch=True)
 # runtime settings
-# runner = dict(type='IterBasedRunner', max_iters=8000)
-runner = dict(type='EpochBasedRunner', max_epochs=50)
-checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=10)
-evaluation = dict(interval=1, metric='mIoU')
+runner = dict(type='EpochBasedRunner', max_epochs=500)
+checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
+evaluation = dict(interval=1, metric='mIoU', com_f1=True,
+                  defect_metric=dict(TYPE='pix_iof', THRESHOLD=[0, 0.2, 0.2, 0.2]),
+                  defect_filter=dict(STATION=False, TYPE='', SIZE_ALL=[16, 16]),
+                  best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1'])

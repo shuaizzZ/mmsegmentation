@@ -10,7 +10,7 @@ from mmcv.runner import init_dist
 from mmcv.utils import Config, DictAction, get_git_hash
 
 from mmseg import __version__
-from mmseg.apis import set_random_seed, train_segmentor
+from mmseg.apis import set_random_seed, train_segmentor, trainer_segmentor
 from mmseg.datasets import build_dataset
 from mmseg.models import build_segmentor
 from mmseg.utils import collect_env, get_root_logger
@@ -170,7 +170,7 @@ def main():
             PALETTE=datasets[0].PALETTE)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
-    train_segmentor(
+    trainer_segmentor(
         model,
         datasets,
         cfg,
