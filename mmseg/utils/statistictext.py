@@ -10,6 +10,8 @@ import mmcv
 from mmcv.runner import HOOKS
 from mmcv.runner.hooks.logger.base import LoggerHook
 from .print_log import print_defect_metrics, print_defect_loss
+from mmcv.runner.dist_utils import master_only
+from mmcv.runner import get_dist_info
 
 
 @HOOKS.register_module()
@@ -50,17 +52,21 @@ class StatisticTextLoggerHook(LoggerHook):
         if runner.meta is not None:
             self._dump_log(runner.meta, runner)
 
-    def after_train_iter(self, runner):
-        cur_iter = self.get_iter(runner, inner_iter=True)
+    @master_only
+    def _print_train_progressbar(self, runner):    
+        rank, world_size = get_dist_info()
+        cur_iter = self.get_iter(runner, inner_iter=True)        
         if cur_iter == 1:
-            self.prog_bar = mmcv.ProgressBar(len(runner.data_loader),10)        
-            self.prog_bar.update()
+            self.prog_bar = mmcv.ProgressBar(len(runner.data_loader)*world_size)        
+            [self.prog_bar.update() for i in range(world_size)]
         elif cur_iter == len(runner.data_loader):
-            self.prog_bar.update()
+            [self.prog_bar.update() for i in range(world_size)]
             self.prog_bar.file.write('\n')
         else:
-            self.prog_bar.update()
-        
+            [self.prog_bar.update() for i in range(world_size)]
+            
+    def after_train_iter(self, runner):
+        self._print_train_progressbar(runner)
         if self.by_epoch and self.end_of_epoch(runner) and self.every_n_epochs(runner, self.interval):
             runner.log_buffer.average(self.interval)
         elif not self.by_epoch and self.every_n_iters(runner, self.interval):

@@ -113,7 +113,7 @@ class TrainerCheckpointHook(Hook):
             cur_val = runner.log_buffer.output[name]['mean']
             runner.cur_eval_res[name] = cur_val
             if val[0] <= cur_val:
-                runner.best_eval_res[name] = [cur_val, runner.epoch]
+                runner.best_eval_res[name] = [cur_val, runner.epoch+ 1]
                 runner.save_checkpoint(
                     self.out_dir, save_optimizer=self.save_optimizer,
                     filename_tmpl=f'{name}_best_model.pth.tar', **self.args)
