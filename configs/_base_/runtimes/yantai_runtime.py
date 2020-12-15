@@ -1,8 +1,8 @@
 # yapf:disable
 log_config = dict(
-   interval=8,
+   interval=1,
    hooks=[
-       dict(type='StatisticTextLoggerHook', by_epoch=True),
+       dict(type='StatisticTextLoggerHook', by_epoch=True, interval=1),
        #dict(type='TensorboardLoggerHook')
    ])
 # yapf:enable
@@ -17,4 +17,4 @@ resume_from = None
 # workflow = [('train', 1), ('val', 1)]
 workflow = [('train', 1)]
 cudnn_benchmark = False
-work_dir = './model'
+work_dir = './yantai_st12_1215_1'
