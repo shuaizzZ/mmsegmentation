@@ -199,20 +199,23 @@ class AinnoDataset(Dataset):
         else:
             num_classes = len(self.CLASSES)
 
-        #all_acc, acc, iou = mean_iou(
+        # all_acc, acc, iou = mean_iou(
         #    results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
-        #print_metrics(logger, all_acc, acc, iou, self.CLASSES, num_classes)
-        
+        # print_metrics(logger, all_acc, acc, iou, self.CLASSES, num_classes)
+
         ###----------------------- 参数初始化 -----------------------##
         self.metrics = SegmentationMetric(num_classes, kwargs['defect_metric'], kwargs['defect_filter'],
-                                          ignore_index=[self.ignore_index], com_f1=kwargs['com_f1'])
+                                          ignore_index=[0], com_f1=kwargs['com_f1'])
 
         ###------------------------- segmentation_batch_eval ------------------------###
         self.metrics.reset()
-        self.metrics.update_batch_metrics(results, gt_seg_maps, station=[])
-        eval_results['Acc'], eval_results['IoU'], auc, eval_results['Recall'], eval_results['Precision'], eval_results['F1'] = self.metrics.get_epoch_results()
+        for predicts, targets in zip(results, gt_seg_maps):
+            predicts = np.expand_dims(predicts, 0)
+            targets = np.expand_dims(targets, 0)
+            self.metrics.update_batch_metrics(predicts, targets)
+        eval_results['Acc'], eval_results['IoU'], eval_results['Recall'], eval_results['Precision'], eval_results['F1'] = self.metrics.get_epoch_results()
 
-        eval_results['ClassName'] = self.CLASSES  
+        eval_results['ClassName'] = self.CLASSES
 
         return  eval_results
 

@@ -41,7 +41,7 @@ class MSELoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
         if self.class_weight is not None:
-            class_weight = predict.new_tensor(self.class_weight)
+            class_weight = torch.tensor(self.class_weight).type_as(predict)
         else:
             class_weight = None
 
@@ -51,6 +51,6 @@ class MSELoss(nn.Module):
             class_wise_loss = class_wise_loss * class_weight
 
         ## do the reduction for the weighted loss
-        loss = self.loss_weight * (1 - weight_reduce_loss(
-            class_wise_loss, weight, reduction=reduction, avg_factor=avg_factor))
+        loss = self.loss_weight * weight_reduce_loss(
+            class_wise_loss, weight, reduction=reduction, avg_factor=avg_factor)
         return loss

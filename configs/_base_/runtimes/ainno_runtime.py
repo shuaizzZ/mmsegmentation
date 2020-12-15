@@ -2,8 +2,7 @@
 log_config = dict(
     interval=1,
     hooks=[
-        dict(type='TextLoggerHook', by_epoch=True),
-        # dict(type='TensorboardLoggerHook')
+        dict(type='StatisticTextLoggerHook', by_epoch=True, interval=1),
     ])
 # yapf:enable
 seed = 4
@@ -17,4 +16,4 @@ resume_from = None
 # workflow = [('train', 1), ('val', 1)]
 workflow = [('train', 1)]
 cudnn_benchmark = False
-work_dir = './model'
+work_dir = './ainno_1215'
