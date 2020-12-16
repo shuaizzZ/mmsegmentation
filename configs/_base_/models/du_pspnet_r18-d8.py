@@ -1,8 +1,8 @@
 # ======================================= model settings ======================================= #
 norm_cfg = dict(type='BN', requires_grad=True)
 num_classes = 4
-# dupsample=dict(scale=8)
-dupsample=None
+dupsample=dict(scale=8)
+# dupsample=None
 align_corners=False
 pretrained_name='resnet18'
 model = dict(
