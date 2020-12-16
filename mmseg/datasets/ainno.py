@@ -1,74 +1,106 @@
 import os
 import time
-import random
 import os.path as osp
-from tqdm import tqdm
 from functools import reduce
 
 import mmcv
 import numpy as np
 from torch.utils.data import Dataset
 
+from mmcv.runner.dist_utils import master_only
 from mmseg.core import mean_iou, SegmentationMetric
 from mmseg.utils import get_root_logger, print_metrics
 
 from .pipelines import Compose
 from .builder import DATASETS
 
-CLASSES = ['background', '1diaojiao', '2liewen', '3kongdong', '4jiaza',
-           '5tongyin', '6naobu', '7xiliewen', '8shengxiu', '9baicha']
+CLASSES = ['background', 'abnormal']
+PALETTE = [[0, 0, 0], [0, 0, 255]]
 
 @DATASETS.register_module()
 class AinnoDataset(Dataset):
     def __init__(self,
                  pipeline,
+                 data_root='',
+                 dataset='',
                  classes=None,
                  labels=None,
+                 palette=None,
                  split='train',
                  test_mode=None,
-                 dataset='',
-                 data_root='',
                  img_suffix='.png',
                  seg_map_suffix='.png',
                  ignore_index=255,
                  reduce_zero_label=False,):
 
-        if classes is not None:
-            self.CLASSES = classes
-        else:
-            self.CLASSES = CLASSES
+        self.data_root = data_root
+        self.dataset = dataset
+        self.CLASSES = classes if classes is not None else CLASSES
+        self.PALETTE = palette if palette is not None else PALETTE
         self.labels=labels
-        self.PALETTE = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
-                   [128, 0, 128], ]
+        self.split = split
+        self.test_mode = test_mode
         self.pipeline = Compose(pipeline)
         self.img_suffix = img_suffix
         self.seg_map_suffix = seg_map_suffix
-        self.split = split
-        self.data_root = data_root
         self.ignore_index = ignore_index
         self.reduce_zero_label = reduce_zero_label
-        self.test_mode = test_mode
-        self.img_infos = []
 
+        self.img_infos = []
+        self.invalid_img_infos = []
+        self.dataset_infos = dict()
+
+        self.load_annotations()
+        self.print_dataset_info()
+
+
+    def info2sample(self, line):
+        _image, _mask = line.rstrip('\n').split(',')[:2]
+        image_path = osp.join(self.data_root, _image)
+        mask_path = osp.join(self.data_root, _mask)
+        image_exist = self.check_image_exist(image_path)
+        mask_exist = self.check_image_exist(mask_path)
+        if image_exist and mask_exist:
+            sample = dict(filename=image_path,
+                          ann=dict(seg_map=mask_path))
+            return sample
+        return None
+
+    def check_image_exist(self, image_path):
+        if not osp.isfile(image_path):
+            self.update_invalid_imgs(image_path)
+            return False
+        return True
+
+    @master_only
+    def update_invalid_imgs(self, image_path):
+        self.invalid_img_infos.append(image_path)
+
+    @master_only
+    def print_dataset_info(self):
+        if not self.invalid_img_infos:
+            invalid_str = 'The following picture does not exist:\n'
+            for inv_path in self.invalid_img_infos:
+                invalid_str += inv_path + '\n'
+            print(invalid_str)
+        str_info = '[{} / {}] - dataset_infos :\n'.format(self.__class__.__name__, self.split)
+        prefix_len = len(str_info)
+        for key, val in self.dataset_infos.items():
+            str_info += '{}{}: {} \n'.format(' '*prefix_len, key, val)
+        print(str_info)
+
+    def load_annotations(self, ):
+        # test_mode 改为分csv或者dir
         if not self.test_mode:
             _split_file = osp.join(self.data_root, '{}.csv'.format(self.split))
             if not osp.isfile(_split_file):
-                raise ValueError('Unknown dataset _split_file: {}'.format(_split_file))
+                raise ValueError('Unexist dataset _split_file: {}'.format(_split_file))
             with open(_split_file, "r") as lines:
                 lines = list(lines)
-            for line in tqdm(lines, desc=self.split):
-                ##-- 读取_image, _mask --##
-                _image, _mask = line.rstrip('\n').split(',')[:2]
-                _image = osp.join(self.data_root, _image)
-                _mask = osp.join(self.data_root, _mask)
-                if not osp.isfile(_image):
-                    print('image error: {}'.format(_image))
+            for line in lines:
+                sample = self.info2sample(line)
+                if not sample:
                     continue
-                if not osp.isfile(_mask):
-                    print('mask error: {}'.format(_mask))
-                    continue
-                sample = dict(filename=_image,
-                              ann=dict(seg_map=_mask))
                 self.img_infos.append(sample)
         else:
             test_dir = osp.join(self.data_root, self.split)
@@ -79,10 +111,8 @@ class AinnoDataset(Dataset):
                 self.img_infos.append(sample)
 
         self.set_len = len(self.img_infos)
+        self.dataset_infos['set_len'] = self.set_len
         time.sleep(1)
-
-    def load_annotations(self, ):
-        pass
 
     def get_ann_info(self, idx):
         """Get annotation by index.
@@ -140,6 +170,7 @@ class AinnoDataset(Dataset):
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
         pass
+
 
     def __getitem__(self, idx):
         if self.test_mode:
@@ -199,15 +230,9 @@ class AinnoDataset(Dataset):
         else:
             num_classes = len(self.CLASSES)
 
-        # all_acc, acc, iou = mean_iou(
-        #    results, gt_seg_maps, num_classes, ignore_index=self.ignore_index)
-        # print_metrics(logger, all_acc, acc, iou, self.CLASSES, num_classes)
-
-        ###----------------------- 参数初始化 -----------------------##
+        ###----------------------- SegmentationMetric -----------------------##
         self.metrics = SegmentationMetric(num_classes, kwargs['defect_metric'], kwargs['defect_filter'],
                                           ignore_index=[0], com_f1=kwargs['com_f1'])
-
-        ###------------------------- segmentation_batch_eval ------------------------###
         self.metrics.reset()
         for predicts, targets in zip(results, gt_seg_maps):
             predicts = np.expand_dims(predicts, 0)
@@ -218,13 +243,3 @@ class AinnoDataset(Dataset):
         eval_results['ClassName'] = self.CLASSES
 
         return  eval_results
-
-
-    def __getitem__(self, idx):
-        if self.test_mode:
-            return self.prepare_test_img(idx)
-        else:
-            return self.prepare_train_img(idx)
-
-    def __len__(self):
-        return self.set_len
