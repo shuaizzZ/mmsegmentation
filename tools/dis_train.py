@@ -123,6 +123,7 @@ def main():
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+    cfg.trainer_csv_path = osp.join(cfg.work_dir, 'train_log.csv')
     # dump config
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps

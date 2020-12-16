@@ -204,7 +204,6 @@ def trainer_segmentor(model,
         runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate))
     ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
-    trainer_log_path = osp.join(cfg.data_root, 'train_log.csv')
-    runner.register_hook(TrainerLogHook(trainer_log_path), priority='LOWEST') #, priority='LOWEST'
+    runner.register_hook(TrainerLogHook(cfg.trainer_csv_path), priority='LOWEST') #, priority='LOWEST'
 
     runner.run(data_loaders, cfg.workflow)

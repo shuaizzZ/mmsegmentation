@@ -9,7 +9,7 @@ lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
                  warmup='linear', warmup_iters=8, warmup_ratio=0.01,
                  warmup_by_epoch=True)
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=500)
+runner = dict(type='EpochBasedRunner', max_epochs=1500)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
 evaluation = dict(interval=1, metric='mIoU', com_f1=True,
                   defect_metric=dict(TYPE='pix_iof', THRESHOLD=[0, 0.2, 0.2, 0.2]),

@@ -154,6 +154,7 @@ class ainnovision():
 
         # create work_dir
         mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+        cfg.trainer_csv_path = osp.join(cfg.data_root, 'train_log.csv')
         # dump config
         cfg.dump(osp.join(cfg.work_dir, osp.basename(mm_config_path)))
         # init the logger before other steps
