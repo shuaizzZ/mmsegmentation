@@ -25,6 +25,7 @@ class YantaiDataset(AinnoDataset):
 
     def _pre_class_balance(self, max_times=10):
         class_nums_str = ''
+        class_times_str = ''
         sort_samples = []
         ng_num = 0
         for k, v in self.class_samples.items():
@@ -34,9 +35,12 @@ class YantaiDataset(AinnoDataset):
         self.class_avg_num = int(ng_num / len(self.class_samples.keys()))
         self.dataset_infos['class_nums'] = class_nums_str
         # 按长度升序
+        # a = sorted(self.class_samples.items(), key=lambda x: x[1])
         sort_samples.sort(key=lambda x: len(x))
         class_times = [self.class_avg_num / len(sort_samples[i]) for i in range(len(sort_samples))]
-        self.dataset_infos['class_times'] = class_times
+        for t in class_times:
+            class_times_str += '{:.2f}, '.format(t)
+        self.dataset_infos['class_times'] = class_times_str
         class_times = [min(round(t), max_times) for t in class_times] # round 4舍5入
         self.major_smaples = sort_samples[-1]
         self.few_samples = []

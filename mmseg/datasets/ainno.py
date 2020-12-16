@@ -78,7 +78,7 @@ class AinnoDataset(Dataset):
 
     @master_only
     def print_dataset_info(self):
-        if not self.invalid_img_infos:
+        if self.invalid_img_infos:
             invalid_str = 'The following picture does not exist:\n'
             for inv_path in self.invalid_img_infos:
                 invalid_str += inv_path + '\n'
