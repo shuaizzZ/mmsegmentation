@@ -130,12 +130,6 @@ class WarmUpDUpsampleHook(Hook):
                 self._run_one_batch(data_batch)
 
             self._print_warmup_infos(runner, self._epoch)
-            # log_str = f'Epoch [{self._epoch + 1}/{self._max_runs}]\t'
-            # for warmup_du_info in self.warmup_du_infos:
-            #     log_str += 'Du_loss: {} '.format(warmup_du_info['du_loss'] / (i + 1))
-            #     warmup_du_info['du_loss'] = 0
-            # runner.logger.info(log_str)
-
             self._epoch = self._epoch + 1
 
     def _run_iters(self, runner):
