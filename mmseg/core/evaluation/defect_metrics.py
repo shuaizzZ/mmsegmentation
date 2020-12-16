@@ -345,7 +345,7 @@ class SegmentationMetric(object):
         self.nclass = nclass
         self.defect_metric = defect_metric
         self.defect_filter = defect_filter
-        if not ignore_index:
+        if ignore_index:
             self.ignore_index = ignore_index if isinstance(ignore_index, list) else [ignore_index]
         else:
             self.ignore_index = []
@@ -557,29 +557,14 @@ class SegmentationMetric(object):
         total_precision = self.total_defect_info['tp'] / self.total_defect_info['predict']
         total_F1 = (2 * total_recall * total_precision) / (total_recall + total_precision)
 
-        ignore_index = []
-        for i in self.ignore_index:
-            if i > self.nclass:
-                continue
-            ignore_index.append(i)
-        a_class_iou = np.delete(class_iou,ignore_index)
-        a_class_pixAcc = np.delete(class_pixAcc,ignore_index)
-        assert mean_iou == a_class_iou.mean()
-        assert mean_pixAcc == a_class_pixAcc.mean()
-        a_class_recall = np.delete(class_recall,ignore_index)
-        a_class_precision = np.delete(class_precision,ignore_index)
-        a_class_F1 = np.delete(class_F1,ignore_index)
-        assert mean_recall == a_class_recall.mean()
-        assert mean_precision == a_class_precision.mean()
-        assert mean_F1 == a_class_F1.mean()
+        eval_results = {}
+        eval_results['IoU'] = dict(val=class_iou, mean=mean_iou, sum=sum_iou)
+        eval_results['Acc'] = dict(val=class_pixAcc, mean=mean_pixAcc, sum=sum_pixAcc)
+        eval_results['Recall'] = dict(val=class_recall, mean=mean_recall, sum=total_recall)
+        eval_results['Precision'] = dict(val=class_precision, mean=mean_precision, sum=total_precision)
+        eval_results['F1'] = dict(val=class_F1, mean=mean_F1, sum=total_F1)
 
-        iou = dict(val=class_iou, mean=mean_iou, sum=sum_iou)
-        acc = dict(val=class_pixAcc, mean=mean_pixAcc, sum=sum_pixAcc)
-        recall = dict(val=class_recall, mean=a_class_recall.mean(), sum=total_recall)
-        precision = dict(val=class_precision, mean=a_class_precision.mean(), sum=total_precision)
-        F1 = dict(val=class_F1, mean=a_class_F1.mean(), sum=total_F1)
-
-        return acc, iou, recall, precision, F1
+        return eval_results
 
     def reset(self):
         self.class_pixel_info = {}

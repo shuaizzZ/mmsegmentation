@@ -30,7 +30,6 @@ class AinnoDataset(Dataset):
                  test_mode=None,
                  img_suffix='.png',
                  seg_map_suffix='.png',
-                 ignore_index=255,
                  reduce_zero_label=False,):
 
         self.data_root = data_root
@@ -43,7 +42,6 @@ class AinnoDataset(Dataset):
         self.pipeline = Compose(pipeline)
         self.img_suffix = img_suffix
         self.seg_map_suffix = seg_map_suffix
-        self.ignore_index = ignore_index
         self.reduce_zero_label = reduce_zero_label
 
         self.img_infos = []
@@ -202,7 +200,7 @@ class AinnoDataset(Dataset):
 
         return gt_seg_maps
 
-    def evaluate(self, results, metric='mIoU', logger=None, **kwargs):
+    def evaluate(self, results, metric='mIoU', logger=None, ignore_index=[], **kwargs):
         """Evaluate the dataset.
 
         Args:
@@ -222,7 +220,6 @@ class AinnoDataset(Dataset):
         if metric not in allowed_metrics:
             raise KeyError('metric {} is not supported'.format(metric))
 
-        eval_results = {}
         gt_seg_maps = self.get_gt_seg_maps()
         if self.CLASSES is None:
             num_classes = len(
@@ -231,15 +228,17 @@ class AinnoDataset(Dataset):
             num_classes = len(self.CLASSES)
 
         ###----------------------- SegmentationMetric -----------------------##
-        self.metrics = SegmentationMetric(num_classes, kwargs['defect_metric'], kwargs['defect_filter'],
-                                          ignore_index=[0], com_f1=kwargs['com_f1'])
+        self.metrics = SegmentationMetric(num_classes,
+                                          kwargs['defect_metric'],
+                                          kwargs['defect_filter'],
+                                          ignore_index=ignore_index,
+                                          com_f1=kwargs['com_f1'])
         self.metrics.reset()
         for predicts, targets in zip(results, gt_seg_maps):
             predicts = np.expand_dims(predicts, 0)
             targets = np.expand_dims(targets, 0)
             self.metrics.update_batch_metrics(predicts, targets)
-        eval_results['Acc'], eval_results['IoU'], eval_results['Recall'], eval_results['Precision'], eval_results['F1'] = self.metrics.get_epoch_results()
-
+        eval_results = self.metrics.get_epoch_results()
         eval_results['ClassName'] = self.CLASSES
 
         return  eval_results
