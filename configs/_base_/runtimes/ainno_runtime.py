@@ -16,4 +16,6 @@ resume_from = None
 # workflow = [('train', 1), ('val', 1)]
 workflow = [('train', 1)]
 cudnn_benchmark = False
-work_dir = './ainno_1215'
+
+work_dir = '/root/public02/manuag/zhangshuai/data/ainno-example/'
+task_name = '2020_1216_18'

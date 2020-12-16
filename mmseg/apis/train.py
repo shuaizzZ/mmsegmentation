@@ -200,7 +200,7 @@ def trainer_segmentor(model,
         runner.load_checkpoint(cfg.load_from)
 
     ## register WarmUpDUpsampleHook
-    if cfg.resume_from is None and cfg.load_from is None:
+    if not (cfg.resume_from and cfg.load_from) and cfg.dupsample:
         runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate))
     ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))

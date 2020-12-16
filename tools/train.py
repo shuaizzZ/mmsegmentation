@@ -26,7 +26,7 @@ def parse_args():
         help='train config file path')
     parser.add_argument(
         '--work-dir',
-        default='../work_dir/2020_1029/',
+        default=None,
         help='the dir to save logs and models')
     parser.add_argument(
         '--load-from',
@@ -99,8 +99,10 @@ def main():
         cfg.work_dir = args.work_dir
     elif cfg.get('work_dir', None) is None:
         # use config filename as default work_dir if cfg.work_dir is None
-        cfg.work_dir = osp.join('./work_dirs',
-                                osp.splitext(osp.basename(args.config))[0])
+        cfg.work_dir = osp.join('./work_dirs', osp.splitext(osp.basename(args.config))[0])
+    else:
+        cfg.work_dir = osp.join(cfg.work_dir, cfg.get('task_name', 'unnamed_task'))
+
     if args.load_from is not None:
         cfg.load_from = args.load_from
     if args.resume_from is not None:
