@@ -17,8 +17,8 @@ MODEL:
 # Dataset
 # -----------------------------------------------------------------------------
 DATASETS:
-    ROOT: '/root/public02/manuag/zhangshuai/data/ainno-example'
-#    ROOT: 'D:\data\mv1130'
+#    ROOT: '/root/public02/manuag/zhangshuai/data/ainno-example'
+    ROOT: 'D:\work\manuvision-platform\bottle\train'
     TYPE: "AinnoDataset"   ## YantaiDataset
     DATASET: "yantai-12_v2345_unq_1008"
     CLASSES: ['background', 'abnormal'] # liewen , 'quekuai', 'zhazhi', 'pingmianbuping', 'loumo'
@@ -32,7 +32,7 @@ DATASETS:
     STD: [0.229,0.224,0.225]
 
     DEFECTSIMULATE:
-        ENABLE: True
+        ENABLE: False
         MODE: [0, 1]
         NUM: [10, 5, 8, 24]
         SIZE: [5, 5, 4, 14]
@@ -42,8 +42,8 @@ DATASETS:
         # FLIP_LEFT_RIGHT, FLIP_TOP_BOTTOM, ROTATE_90, ROTATE_180, ROTATE_270, TRANSPOSE, TRANSVERSE ==> 0~6
         CROP_SIZE: [1024, 1024]
         RESIZE_MODE: 1
-        RESIZE_RANGE_H: [0.7, 1.4]
-        RESIZE_RANGE_W: [0.7, 1.4]
+        RESIZE_RANGE_H: [0.8, 1.2]
+        RESIZE_RANGE_W: [0.8, 1.2]
         ROTATE_RANGE: [45, 45]
         BRIGHT_RANGE: [0.8, 1.2]
         CONTRAST_RANGE: [0.8, 1.2]

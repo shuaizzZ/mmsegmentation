@@ -100,7 +100,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.test.pipeline = mmcfg.test_pipeline
 
     # mmcfg.data.samples_per_gpu = mvcfg.TRAIN.BATCH_SIZE
-    # mmcfg.data.workers_per_gpu = 0
+    mmcfg.data.workers_per_gpu = 0
 
     ## schedule
     # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
@@ -301,7 +301,7 @@ class ainnovision():
 
         checkpath = osp.join(cfg.work_dir, 'F1_best_model.pth.tar')
         checkpoint = torch.load(checkpath, map_location='cpu')
-        model_cfg = checkpoint["config"].model
+        model_cfg = checkpoint['meta']["config"].model
 
         # build the model and load checkpoint
         model_cfg.pretrained = None
