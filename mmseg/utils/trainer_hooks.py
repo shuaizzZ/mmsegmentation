@@ -98,7 +98,6 @@ class TrainerCheckpointHook(Hook):
     def after_train_epoch(self, runner):
         if not self.by_epoch or not self.every_n_epochs(runner, self.interval):
             return
-        # runner.logger.info(f'Saving checkpoint at {runner.epoch + 1} epochs')
         if self.sync_buffer:
             allreduce_params(runner.model.buffers())
         self._save_checkpoint(runner)
@@ -111,12 +110,14 @@ class TrainerCheckpointHook(Hook):
         runner.save_checkpoint(
             self.out_dir, save_optimizer=self.save_optimizer, **self.args)
 
-        for name, val in runner.best_eval_res.items():
+        for name, best_val in runner.best_eval_res.items():
             if name not in runner.best_metrics:
                 continue
             cur_val = runner.log_buffer.output[name]['mean']
             runner.cur_eval_res[name] = cur_val
-            if val[0] <= cur_val:
+            # if cur_val==1, that is mean : value = (0+smooth)/(0+smooth) = 1,
+            # we thank that this should't be the best value.
+            if cur_val > best_val[0] and cur_val < 1:
                 runner.best_eval_res[name] = [cur_val, runner.epoch+ 1]
                 runner.save_checkpoint(
                     self.out_dir, save_optimizer=self.save_optimizer,
