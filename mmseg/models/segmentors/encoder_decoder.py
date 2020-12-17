@@ -225,7 +225,7 @@ class EncoderDecoder(BaseSegmentor):
 
         return seg_logit
 
-    def inference(self, img, img_meta, rescale, use_softmax=True):
+    def inference(self, img, img_meta, rescale, use_softmax):
         """Inference with slide/whole style.
 
         Args:
