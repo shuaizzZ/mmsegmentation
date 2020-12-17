@@ -524,16 +524,17 @@ class SegmentationMetric(object):
         :param targets: 3D nparray, (n, h, w).
         :return:
         """
-        sta_npy = time.time()
+        sta_data = time.time()
         predicts = np.uint8(predicts)
         targets = np.uint8(targets)
-        end_npy = time.time()
+        end_data = time.time()
 
         ## ------ 计算pixAcc, IoU, F1 ------ ##
         self.batch_pixelAcc_iou(predicts, targets)
-        end_iou = time.time()
+        end_piexl = time.time()
         if self.com_f1:
             self.segmentation_defect_f1(predicts, targets)
+        end_defect = time.time()
 
     def get_epoch_results(self):
         ## pixAcc
@@ -556,7 +557,7 @@ class SegmentationMetric(object):
         total_recall = self.total_defect_info['tp'] / self.total_defect_info['target']
         total_precision = self.total_defect_info['tp'] / self.total_defect_info['predict']
         total_F1 = (2 * total_recall * total_precision) / (total_recall + total_precision)
-
+        ## eval_results
         eval_results = {}
         eval_results['IoU'] = dict(val=class_iou, mean=mean_iou, sum=sum_iou)
         eval_results['Acc'] = dict(val=class_pixAcc, mean=mean_pixAcc, sum=sum_pixAcc)

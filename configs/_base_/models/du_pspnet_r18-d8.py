@@ -55,9 +55,9 @@ model = dict(
 )
 warmup_du_cfg = dict(
     interval=1,
-    optimizer=dict(type='SGD', lr=0.01),
+    optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
     # optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
-    total_runs=10,
+    total_runs=0,
     by_epoch=True)
 # model training and testing settings
 train_cfg = dict()
