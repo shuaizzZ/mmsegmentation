@@ -44,7 +44,7 @@ class TrainerLogHook(Hook):
         log_info = [runner.epoch]
         runner.cur_eval_res['IoU']
         for name in runner.best_metrics:
-            log_info.append(round(runner.cur_eval_res[name], self.ndigits))
+            log_info.append(round(runner.cur_eval_res[name] * 100, self.ndigits))
         self.log_csv.append(log_info)
 
 
