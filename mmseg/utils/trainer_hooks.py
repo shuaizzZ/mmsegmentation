@@ -27,8 +27,9 @@ class CheckRunstateHook(Hook):
 
 
 class TrainerLogHook(Hook):
-    def __init__(self, trainer_csv_path):
+    def __init__(self, trainer_csv_path, ndigits=3):
         self.trainer_csv_path = trainer_csv_path
+        self.ndigits = ndigits
 
     @master_only
     def before_run(self, runner):
@@ -43,7 +44,7 @@ class TrainerLogHook(Hook):
         log_info = [runner.epoch]
         runner.cur_eval_res['IoU']
         for name in runner.best_metrics:
-            log_info.append(runner.cur_eval_res[name])
+            log_info.append(round(runner.cur_eval_res[name], self.ndigits))
         self.log_csv.append(log_info)
 
 
