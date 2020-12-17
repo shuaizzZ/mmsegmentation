@@ -19,6 +19,7 @@ crop_size = (512, 512)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', reduce_zero_label=False),
+    dict(type='XYShift', shift=(6, 3)),
     dict(type='Relabel', labels=labels),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='MVResize', h_range=(0.8, 1.2), w_range=(0.8, 1.2), keep_ratio=True),
@@ -44,6 +45,7 @@ val_pipeline = [
         transforms=[
             # dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
             #      pad_mode=['range', 'constant'], pad_fill=[[0, 255], 0], pad_expand=1.0),
+            dict(type='XYShift', shift=(6, 3)),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
