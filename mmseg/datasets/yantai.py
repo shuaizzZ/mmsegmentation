@@ -72,6 +72,28 @@ class YantaiDataset(AinnoDataset):
             return sample
         return None
 
+    def _update_samples(self, sample):
+        if not sample:
+            return
+        label = sample['label']
+        if self.split == 'train':
+            if label == 'OK':
+                self.ok_ori_samples.append(sample)
+            elif label not in self.class_samples.keys():
+                label_init = {label: [sample]}
+                self.class_samples.update(label_init)
+            elif label in self.class_samples.keys():
+                self.class_samples[label].append(sample)
+            else:
+                raise ValueError('Unkonwn label type !!!')
+        elif self.split == 'val':
+            if label == 'OK':
+                self.ok_ori_samples.append(sample)
+            else:
+                self.ng_ori_samples.append(sample)
+        else:
+            raise ValueError('Unkonwn dataset split : {}'.format(self.split))
+
     def load_annotations(self, ):
         self.ok_ori_samples = []
         self.ng_ori_samples = []
@@ -86,60 +108,25 @@ class YantaiDataset(AinnoDataset):
             lines = list(lines)
         for line in lines:
             sample = self.info2sample(line)
-            if not sample:
-                continue
-            label = sample['label']
-            if self.split == 'train':
-                if label == 'OK':
-                    self.ok_ori_samples.append(sample)
-                elif label not in self.class_samples.keys():
-                    label_init = {label: [sample]}
-                    self.class_samples.update(label_init)
-                elif label in self.class_samples.keys():
-                    self.class_samples[label].append(sample)
-                else:
-                    raise ValueError('Unkonwn label type !!!')
-            elif self.split == 'val':
-                if label == 'OK':
-                    self.ok_ori_samples.append(sample)
-                else:
-                    self.ng_ori_samples.append(sample)
-            else:
-                raise ValueError('Unkonwn dataset split : {}'.format(self.split))
-        ##---------------- ok取部分 ----------------##
-        self.ok_ori_len = len(self.ok_ori_samples)
-        if '06' in self.dataset:
-            self.ok_len = int(self.ok_ori_len * 0.15)
-            self.shift = [7, 4]
-        elif '12' in self.dataset:
-            self.ok_len = int(self.ok_ori_len * 0.2)
-            # self.shift = [7, 4]
-            self.shift = [4, 2]
-        elif '57' in self.dataset:
-            self.ok_len = int(self.ok_ori_len * 0.2)
-            # self.shift = [7, 4]
-            self.shift = [6, 3]
+            self._update_samples(sample)
 
         ##---------------- 训练集类别平衡 ----------------##
+        self.ok_ori_len = len(self.ok_ori_samples)
         if self.split == 'train':
+            if '06' in self.dataset:
+                self.ok_len = int(self.ok_ori_len * 0.15)
+            elif '12' in self.dataset:
+                self.ok_len = int(self.ok_ori_len * 0.2)
+            elif '57' in self.dataset:
+                self.ok_len = int(self.ok_ori_len * 0.2)
             self._pre_class_balance(max_times=10)
             self._epoch_balance()
             self.ng_len = len(self.ng_samples)
-            if '06' in self.dataset:
-                self.ok_len = int(self.ok_ori_len * 0.15)
-                self.shift = [7, 4]
-            elif '12' in self.dataset:
-                self.ok_len = int(self.ok_ori_len * 0.2)
-                # self.shift = [7, 4]
-                self.shift = [4, 2]
-            elif '57' in self.dataset:
-                self.ok_len = int(self.ok_ori_len * 0.2)
-                # self.shift = [7, 4]
-                self.shift = [6, 3]
         elif self.split == 'val':
+            self.ok_len = self.ok_ori_len
             self.img_infos = self.ok_ori_samples + self.ng_ori_samples
             self.ng_len = len(self.ng_ori_samples)
-            self.ok_len = self.ok_ori_len
+
         self.set_len = len(self.img_infos)
         assert self.set_len == self.ok_len + self.ng_len
         self.dataset_infos['sample_nums'] = '(OK: {}, NG: {} ,Total: {})'.format(

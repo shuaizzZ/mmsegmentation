@@ -1,3 +1,5 @@
+
+import cv2
 import mmcv
 import numpy as np
 from numpy import random
@@ -326,4 +328,42 @@ class MVCrop(object):
                      f'pad_mode={self.pad_mode}, '
                      f'pad_fill={self.pad_fill}, '
                      f'pad_expand={self.pad_expand})')
+        return repr_str
+
+
+@PIPELINES.register_module()
+class XYShift(object):
+    def __init__(self,
+                 shift=None,):
+        self.shift = shift if isinstance(shift, tuple) else tuple(shift)
+
+    def _get_random_shift(self, results):
+        if not self.shift or self.shift==(0, 0):
+            return
+        sx = random.randint(-self.shift[0], self.shift[0])
+        sy = random.randint(-self.shift[1], self.shift[1])
+        results['shift_xy'] = (sx, sy)
+
+    def _shift_img(self, results):
+        sx, sy = results['shift_xy']
+        img = results['img']
+        h, w = img.shape[:2]
+        ming, an, fusion = cv2.split(img) # opencv 读图按BGR
+
+        M = np.float32([[1, 0, sx], [0, 1, sy]])
+        shift_an = cv2.warpAffine(an, M, (w, h))
+        new_fusion = cv2.addWeighted(ming, 0.5, shift_an, 0.5, 0)
+        img = cv2.merge((ming, shift_an, new_fusion))
+        results['img'] = img
+        # abs_shift = abs(sx) + abs(sy)
+
+    def __call__(self, results):
+        self._get_random_shift(results)
+        if results.get('shift_xy'):
+            self._shift_img(results)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += (f'(shift={self.shift})')
         return repr_str
