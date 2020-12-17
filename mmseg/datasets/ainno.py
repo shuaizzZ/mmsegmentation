@@ -87,6 +87,11 @@ class AinnoDataset(Dataset):
             str_info += '{}{}: {} \n'.format(' '*prefix_len, key, val)
         print(str_info)
 
+    def update_samples(self, sample):
+        if not sample:
+            return
+        self.img_infos.append(sample)
+
     def load_annotations(self, ):
         # test_mode 改为分csv或者dir
         if not self.test_mode:
@@ -97,16 +102,14 @@ class AinnoDataset(Dataset):
                 lines = list(lines)
             for line in lines:
                 sample = self.info2sample(line)
-                if not sample:
-                    continue
-                self.img_infos.append(sample)
+                self.update_samples(sample)
         else:
             test_dir = osp.join(self.data_root, self.split)
             assert osp.isdir(test_dir), test_dir
             for img_name in os.listdir(test_dir):
                 sample = dict(filename=osp.join(test_dir, img_name),
                               ann=dict(seg_map=None))
-                self.img_infos.append(sample)
+                self.update_samples(sample)
 
         self.set_len = len(self.img_infos)
         self.dataset_infos['set_len'] = self.set_len

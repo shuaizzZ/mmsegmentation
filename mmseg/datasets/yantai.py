@@ -72,7 +72,7 @@ class YantaiDataset(AinnoDataset):
             return sample
         return None
 
-    def _update_samples(self, sample):
+    def update_samples(self, sample):
         if not sample:
             return
         label = sample['label']
@@ -108,7 +108,7 @@ class YantaiDataset(AinnoDataset):
             lines = list(lines)
         for line in lines:
             sample = self.info2sample(line)
-            self._update_samples(sample)
+            self.update_samples(sample)
 
         ##---------------- 训练集类别平衡 ----------------##
         self.ok_ori_len = len(self.ok_ori_samples)
