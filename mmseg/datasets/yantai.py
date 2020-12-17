@@ -14,12 +14,12 @@ PALETTE = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
 @DATASETS.register_module()
 class YantaiDataset(AinnoDataset):
     def __init__(self,
-                 classes=None,
-                 palette=None,
+                 classes=CLASSES,
+                 palette=PALETTE,
                  **kwargs):
         super(YantaiDataset, self).__init__(
-            classes=CLASSES,
-            palette=PALETTE,
+            classes=classes,
+            palette=palette,
             **kwargs)
 
 
