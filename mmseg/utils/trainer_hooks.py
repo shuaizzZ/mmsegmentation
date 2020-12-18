@@ -27,24 +27,34 @@ class CheckRunstateHook(Hook):
 
 
 class TrainerLogHook(Hook):
-    def __init__(self, trainer_csv_path, ndigits=3):
+    def __init__(self, trainer_csv_path, num_classes=None, ndigits=3):
         self.trainer_csv_path = trainer_csv_path
         self.ndigits = ndigits
+        assert isinstance(num_classes, int)
+        self.num_classes = num_classes
 
     @master_only
     def before_run(self, runner):
         if os.path.isfile(self.trainer_csv_path):
             os.remove(self.trainer_csv_path)
         self.log_csv = CSV(self.trainer_csv_path)
-        log_head = ['epoch'] + runner.best_metrics
+
+        log_head = ['epoch']
+        for name in runner.best_metrics:
+            log_head.append('{}_{}'.format(name, runner.best_type))
+        for c in range(1, self.num_classes):
+            for name in runner.best_metrics:
+                log_head.append('{}_{}'.format(name, c))
         self.log_csv.append(log_head)
 
     @master_only
     def after_train_epoch(self, runner):
         log_info = [runner.epoch]
-        runner.cur_eval_res['IoU']
         for name in runner.best_metrics:
-            log_info.append(round(runner.cur_eval_res[name] * 100, self.ndigits))
+            log_info.append(round(runner.log_buffer.output[name][runner.best_type] * 100, self.ndigits))
+        for c in range(1, self.num_classes):
+            for name in runner.best_metrics:
+                log_info.append(round(runner.log_buffer.output[name]['class'][c] * 100, self.ndigits))
         self.log_csv.append(log_info)
 
 
@@ -78,6 +88,7 @@ class TrainerCheckpointHook(Hook):
                  out_dir=None,
                  max_keep_ckpts=-1,
                  sync_buffer=False,
+                 best_type='sum',
                  **kwargs):
         self.interval = interval
         self.by_epoch = by_epoch
@@ -86,8 +97,10 @@ class TrainerCheckpointHook(Hook):
         self.max_keep_ckpts = max_keep_ckpts
         self.args = kwargs
         self.sync_buffer = sync_buffer
+        self.best_type = best_type
 
     def before_run(self, runner):
+        runner.best_type = self.best_type
         runner.best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1']
         runner.best_eval_res = {}
         runner.cur_eval_res = {}

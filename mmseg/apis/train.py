@@ -168,9 +168,10 @@ def trainer_segmentor(model,
             meta=meta))
 
     ## register hooks
+    ## the priority priority of log_hook is VERY_LOW, and others is NORMAL
     checkpoint_config = cfg.checkpoint_config
     checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
-    checkpoint_config.setdefault('priority', 'VERY_LOW')
+    checkpoint_config.setdefault('priority', 'LOW')
     trainer_checkpoint_hook = runner.register_hook_from_cfg(checkpoint_config)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    trainer_checkpoint_hook, cfg.log_config,
@@ -192,7 +193,7 @@ def trainer_segmentor(model,
         ## 度量指标      
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))#,'VERY_LOW'
+        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
@@ -204,6 +205,6 @@ def trainer_segmentor(model,
         runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate))
     ## register CheckRunstateHook and TrainerLogHook
     runner.register_hook(CheckRunstateHook(runstate))
-    runner.register_hook(TrainerLogHook(cfg.trainer_csv_path), priority='LOWEST') #, priority='LOWEST'
+    runner.register_hook(TrainerLogHook(cfg.trainer_csv_path, cfg.num_classes), priority='LOW')
 
     runner.run(data_loaders, cfg.workflow)
