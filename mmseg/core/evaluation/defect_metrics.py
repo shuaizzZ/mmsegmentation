@@ -225,16 +225,16 @@ class SegmentationMetric(object):
         mean_precision = np.nanmean(class_precision)
         mean_F1 = np.nanmean(class_F1)
 
-        total_recall = self.total_defect_info['tp'] / self.total_defect_info['target']
-        total_precision = self.total_defect_info['tp'] / self.total_defect_info['predict']
-        total_F1 = (2 * total_recall * total_precision) / (total_recall + total_precision)
+        sum_recall = self.total_defect_info['tp'] / self.total_defect_info['target']
+        sum_precision = self.total_defect_info['tp'] / self.total_defect_info['predict']
+        sum_F1 = (2 * total_recall * total_precision) / (total_recall + total_precision)
         ## eval_results
         eval_results = {}
-        eval_results['IoU'] = dict(val=class_iou, mean=mean_iou, sum=sum_iou)
-        eval_results['Acc'] = dict(val=class_pixAcc, mean=mean_pixAcc, sum=sum_pixAcc)
-        eval_results['Recall'] = dict(val=class_recall, mean=mean_recall, sum=total_recall)
-        eval_results['Precision'] = dict(val=class_precision, mean=mean_precision, sum=total_precision)
-        eval_results['F1'] = dict(val=class_F1, mean=mean_F1, sum=total_F1)
+        eval_results['IoU'] = {'class': class_iou, 'mean': mean_iou, 'sum': sum_iou}
+        eval_results['Acc'] = {'class': class_pixAcc, 'mean': mean_pixAcc, 'sum': sum_pixAcc}
+        eval_results['Recall'] = {'class': class_recall, 'mean': mean_recall, 'sum': sum_recall}
+        eval_results['Precision'] = {'class': class_precision, 'mean': mean_precision, 'sum': sum_precision}
+        eval_results['F1'] = {'class': class_F1, 'mean': mean_F1, 'sum': sum_F1}
 
         return eval_results
 

@@ -39,11 +39,11 @@ def print_defect_metrics(log_dict, CLASSES=None, num_classes=2):
         class_names = CLASSES
         num_classes = len(CLASSES)
     for i in range(num_classes):
-        iou_str = '{:.2f}'.format(iou['val'][i] * 100)
-        acc_str = '{:.2f}'.format(acc['val'][i] * 100)
-        recall_str = '{:.2f}'.format(recall['val'][i] * 100)
-        precision_str = '{:.2f}'.format(precision['val'][i] * 100)
-        f1_str = '{:.2f}'.format(f1['val'][i] * 100)      
+        iou_str = '{:.2f}'.format(iou['class'][i] * 100)
+        acc_str = '{:.2f}'.format(acc['class'][i] * 100)
+        recall_str = '{:.2f}'.format(recall['class'][i] * 100)
+        precision_str = '{:.2f}'.format(precision['class'][i] * 100)
+        f1_str = '{:.2f}'.format(f1['class'][i] * 100)
         summary_str += line_format.format(class_names[i], iou_str, acc_str, recall_str, precision_str, f1_str)    
     
     summary_str += 'Summary:\n'
