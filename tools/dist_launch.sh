@@ -5,4 +5,9 @@ GPUS=$2
 PORT=${PORT:-29500}
 
 PYTHONPATH="$(dirname $0)/..":$PYTHONPATH \
-python launch.py --nproc_per_node=4 --master_port=123321 dis_train.py --launcher pytorch
+python launch.py\
+    --nproc_per_node=4\
+    --master_port=123321\
+    train.py\
+    --launcher=pytorch\
+    --gpu-ids=[0,1,2,3]
