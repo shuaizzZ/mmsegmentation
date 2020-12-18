@@ -268,7 +268,7 @@ class EncoderDecoder(BaseSegmentor):
         seg_logit = self.inference(img, img_meta, rescale, use_softmax=use_softmax)
         if return_logit:
             return seg_logit
-        seg_pred = seg_logit.argmax(dim=1)
+        seg_pred = torch.max(seg_logit, dim=1)[1]
         if torch.onnx.is_in_onnx_export():
             # our inference backend only support 4D output
             seg_pred = seg_pred.unsqueeze(0)
@@ -291,7 +291,7 @@ class EncoderDecoder(BaseSegmentor):
             cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale)
             seg_logit += cur_seg_logit
         seg_logit /= len(imgs)
-        seg_pred = seg_logit.argmax(dim=1)
+        seg_pred = torch.max(seg_logit, dim=1)[1]
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
         seg_pred = list(seg_pred)
