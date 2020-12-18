@@ -227,7 +227,7 @@ class SegmentationMetric(object):
 
         sum_recall = self.total_defect_info['tp'] / self.total_defect_info['target']
         sum_precision = self.total_defect_info['tp'] / self.total_defect_info['predict']
-        sum_F1 = (2 * total_recall * total_precision) / (total_recall + total_precision)
+        sum_F1 = (2 * sum_recall * sum_precision) / (sum_recall + sum_precision)
         ## eval_results
         eval_results = {}
         eval_results['IoU'] = {'class': class_iou, 'mean': mean_iou, 'sum': sum_iou}
