@@ -278,7 +278,7 @@ class EncoderDecoder(BaseSegmentor):
         seg_pred = list(seg_pred)
         return seg_pred
 
-    def aug_test(self, imgs, img_metas, rescale=True):
+    def aug_test(self, imgs, img_metas, rescale=True, return_logit=False, use_softmax=True):
         """Test with augmentations.
 
         Only rescale=True is supported.
@@ -286,11 +286,13 @@ class EncoderDecoder(BaseSegmentor):
         # aug_test rescale all imgs back to ori_shape for now
         assert rescale
         # to save memory, we get augmented seg logit inplace
-        seg_logit = self.inference(imgs[0], img_metas[0], rescale)
+        seg_logit = self.inference(imgs[0], img_metas[0], rescale, use_softmax=use_softmax)
         for i in range(1, len(imgs)):
-            cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale)
+            cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale, use_softmax=use_softmax)
             seg_logit += cur_seg_logit
         seg_logit /= len(imgs)
+        if return_logit:
+            return seg_logit
         seg_pred = torch.max(seg_logit, dim=1)[1]
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
