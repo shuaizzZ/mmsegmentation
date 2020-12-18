@@ -21,8 +21,8 @@ def parse_args():
     parser.add_argument(
         '--config',
         # default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
-        # default='../configs/pspnet/dupsp_r18_yantai_st12.py',
-        default='../configs/pspnet/dupsp_r18_ainno.py',
+        default='../configs/pspnet/dupsp_r18_yantai_st12.py',
+        # default='../configs/pspnet/dupsp_r18_ainno.py',
         help='train config file path')
     parser.add_argument(
         '--work-dir',
@@ -49,7 +49,7 @@ def parse_args():
     group_gpus.add_argument(
         '--gpu-ids',
         default=[0],
-        type=int,
+        type=list,
         nargs='+',
         help='ids of gpus to use (only applicable to non-distributed training)')
 
@@ -126,7 +126,10 @@ def main():
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
+    if cfg.get('log_name'):
+        log_file = osp.join(cfg.work_dir, f'{cfg.log_name}.log')
+    else:
+        log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
 
     # init the meta dict to record some important information such as
