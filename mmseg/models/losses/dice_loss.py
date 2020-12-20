@@ -47,6 +47,7 @@ class DiceLoss(nn.Module):
             class_weight = None
 
         N, C, H, W = predict.size()
+        assert torch.max(target).item() <= C, 'max_id({}) > C({})'.format(torch.max(target).item(), C)
         pt = F.softmax(predict, dim=1) # N,C,H,W
         ## convert target(N,H,W) into onehot vector (N,C,H,W)
         target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
