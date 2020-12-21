@@ -9,5 +9,5 @@ python launch.py\
     --nproc_per_node=4\
     --master_port=123321\
     train.py\
-    --launcher=pytorch\
-    --gpu-ids=[0,1,2,3]
+    --launcher pytorch\
+    --gpu-ids 0 1 2 3

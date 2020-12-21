@@ -49,7 +49,7 @@ def parse_args():
     group_gpus.add_argument(
         '--gpu-ids',
         default=[0],
-        type=list,
+        type=int,
         nargs='+',
         help='ids of gpus to use (only applicable to non-distributed training)')
 
@@ -82,7 +82,13 @@ def parse_args():
 
     return args
 
-a=1
+def replace_BN_cfg(cfg):
+    # replace the type of norm_cfg with BN
+    cfg.norm_cfg.type = 'BN'
+    for key, val in cfg.model.items():
+        if 'norm_cfg' in cfg.model[key]:
+            cfg.model[key]['norm_cfg'] = cfg.norm_cfg
+
 def main():
     args = parse_args()
 
@@ -108,16 +114,19 @@ def main():
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     if args.gpu_ids is not None:
-        cfg.gpu_ids = args.gpu_ids
+        cfg.gpu_ids = args.gpu_ids if isinstance(args.gpu_ids, list) else [args.gpu_ids]
     else:
         cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
 
     # init distributed env first, since logger depends on the dist info.
-    if args.launcher == 'none':
-        distributed = False
-    else:
+    # if not distributed, replace SyncBN with BN
+    if len(cfg.gpu_ids) > 1:
+        assert args.launcher != 'none', 'launcher = {}'.format(args.launcher)
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+    else:
+        distributed = False
+        replace_BN_cfg(cfg)
 
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
@@ -142,11 +151,9 @@ def main():
     logger.info('Environment info:\n' + dash_line + env_info + '\n' +
                 dash_line)
     meta['env_info'] = env_info
-
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
-
     # set random seeds
     if args.seed is not None:
         logger.info(f'Set random seed to {args.seed}, deterministic: '
@@ -171,12 +178,18 @@ def main():
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
             mmseg_version=f'{__version__}+{get_git_hash()[:7]}',
-            config=cfg.pretty_text,
+            config=cfg, # cfg.pretty_text (ORG)
             CLASSES=datasets[0].CLASSES,
             PALETTE=datasets[0].PALETTE)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
-    trainer_segmentor(
+
+    # normal or manuvision train_segmentor
+    if cfg.get('segmentor_type') == 'manuvision':
+        segmentor = trainer_segmentor
+    else:
+        segmentor = train_segmentor
+    segmentor(
         model,
         datasets,
         cfg,
