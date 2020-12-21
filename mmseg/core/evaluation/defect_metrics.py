@@ -209,25 +209,29 @@ class SegmentationMetric(object):
 
     def get_epoch_results(self):
         ## pixAcc
+        self.class_pixel_info['label'] += self.smooth_n
         class_pixAcc = self.class_pixel_info['inter'] / self.class_pixel_info['label']
         mean_pixAcc = np.nanmean(class_pixAcc)
         sum_pixAcc = np.nansum(self.class_pixel_info['inter']) / np.nansum(self.class_pixel_info['label'])
         ## IoU
+        self.class_pixel_info['union'] += self.smooth_n
         class_iou = self.class_pixel_info['inter'] / self.class_pixel_info['union']
         mean_iou = np.nanmean(class_iou)
         sum_iou = np.nansum(self.class_pixel_info['inter']) / np.nansum(self.class_pixel_info['union'])
         ## recall, precision, F1
+        self.class_defect_info['target'] += self.smooth_n
+        self.class_defect_info['predict'] += self.smooth_n
         class_recall = self.class_defect_info['tp'] / self.class_defect_info['target']
         class_precision = self.class_defect_info['tp'] / self.class_defect_info['predict']
-        class_F1 = (2 * class_recall * class_precision) / (class_recall + class_precision)
+        class_F1 = (2 * class_recall * class_precision) / (class_recall + class_precision + self.smooth_n)
 
         mean_recall = np.nanmean(class_recall)
         mean_precision = np.nanmean(class_precision)
         mean_F1 = np.nanmean(class_F1)
 
-        sum_recall = self.total_defect_info['tp'] / self.total_defect_info['target']
-        sum_precision = self.total_defect_info['tp'] / self.total_defect_info['predict']
-        sum_F1 = (2 * sum_recall * sum_precision) / (sum_recall + sum_precision)
+        sum_recall = self.total_defect_info['tp'] / (self.total_defect_info['target'] + self.smooth)
+        sum_precision = self.total_defect_info['tp'] / (self.total_defect_info['predict'] + self.smooth)
+        sum_F1 = (2 * sum_recall * sum_precision) / (sum_recall + sum_precision + self.smooth)
         ## eval_results
         eval_results = {}
         eval_results['IoU'] = {'class': class_iou, 'mean': mean_iou, 'sum': sum_iou}
@@ -242,10 +246,11 @@ class SegmentationMetric(object):
         self.class_pixel_info = {}
         self.class_defect_info = {}
         self.total_defect_info = {}
+        # TODO how to define 0/0
         for pf, df in zip(self.pixel_fields, self.defect_fields):
-            self.class_pixel_info[pf] = self.smooth_n.copy()
-            self.class_defect_info[df] = self.smooth_n.copy()
-            self.total_defect_info[df] = self.smooth.copy()
+            self.class_pixel_info[pf] = np.zeros((self.nclass, )) #self.smooth_n.copy()
+            self.class_defect_info[df] = np.zeros((self.nclass, )) #self.smooth_n.copy()
+            self.total_defect_info[df] = 0.0
 
         # fill np.nan for ignore_index in class_info
         for c in range(0, self.nclass):
