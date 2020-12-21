@@ -108,9 +108,9 @@ def train_segmentor(model,
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
 
-    ## du blocks
-    if cfg.resume_from is None and cfg.load_from is None:
-        runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed))
+    ## register WarmUpDUpsampleHook
+    if not (cfg.resume_from and cfg.load_from) and cfg.dupsample:
+        runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate))
 
     runner.run(data_loaders, cfg.workflow)
 
