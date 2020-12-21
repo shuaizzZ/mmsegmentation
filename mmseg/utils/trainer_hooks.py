@@ -126,7 +126,7 @@ class TrainerCheckpointHook(Hook):
         for name, best_val in runner.best_eval_res.items():
             if name not in runner.best_metrics:
                 continue
-            cur_val = runner.log_buffer.output[name]['mean']
+            cur_val = runner.log_buffer.output[name][runner.best_type]
             runner.cur_eval_res[name] = cur_val
             # if cur_val==1, that is mean : value = (0+smooth)/(0+smooth) = 1,
             # we thank that this should't be the best value.
