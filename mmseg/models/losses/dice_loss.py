@@ -47,9 +47,10 @@ class DiceLoss(nn.Module):
             class_weight = None
 
         N, C, H, W = predict.size()
-        if ignore_index != None:
-            mask_target = target.eq(ignore_index)
-            target[mask_target] = 0
+        # TODO ignore_index
+        # if ignore_index != None:
+        #     mask_ignore = target.eq(ignore_index)
+        #     target[mask_ignore] = 0
 
         assert torch.max(target).item() <= C, 'max_id({}) > C({})'.format(torch.max(target).item(), C)
         pt = F.softmax(predict, dim=1) # N,C,H,W
@@ -57,12 +58,13 @@ class DiceLoss(nn.Module):
         target_onehot = torch.zeros(predict.size()).type_as(target)  # N,C,H,W
         target_onehot.scatter_(1, target.view(N, 1, H, W), 1)  # N,C,H,W
 
-        intersection = torch.sum(pt * target_onehot, dim=1)  # N,H,W
+        inter = torch.sum(pt * target_onehot, dim=1)  # N,H,W
         union = torch.sum(pt, dim=1) + torch.sum(target_onehot, dim=1)  # N,H,W
-        if ignore_index != None:
-            intersection = torch.masked_select(intersection, mask_target)
-            intersection = torch.masked_select(intersection, mask_target)
-        dice_coef = torch.mean((2 * torch.sum(intersection) + self.smooth) /
+        # TODO version of inter been change
+        # if ignore_index != None:
+        #     inter = torch.masked_select(inter, mask_ignore==False)
+        #     union = torch.masked_select(union, mask_ignore==False)
+        dice_coef = torch.mean((2 * torch.sum(inter) + self.smooth) /
                                (torch.sum(union) + self.smooth))
 
         loss = self.loss_weight * (1 - dice_coef)
