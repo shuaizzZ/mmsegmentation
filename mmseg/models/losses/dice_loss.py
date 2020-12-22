@@ -36,17 +36,21 @@ class DiceLoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None,
+                ignore_index=None,
                 **kwargs):
         """Forward function."""
         assert reduction_override in (None, 'none', 'mean', 'sum')
-        reduction = (
-            reduction_override if reduction_override else self.reduction)
+        reduction = reduction_override if reduction_override else self.reduction
         if self.class_weight is not None:
             class_weight = torch.tensor(self.class_weight).type_as(predict)
         else:
             class_weight = None
 
         N, C, H, W = predict.size()
+        if ignore_index != None:
+            mask_target = target.eq(ignore_index)
+            target[mask_target] = 0
+
         assert torch.max(target).item() <= C, 'max_id({}) > C({})'.format(torch.max(target).item(), C)
         pt = F.softmax(predict, dim=1) # N,C,H,W
         ## convert target(N,H,W) into onehot vector (N,C,H,W)
@@ -55,7 +59,9 @@ class DiceLoss(nn.Module):
 
         intersection = torch.sum(pt * target_onehot, dim=1)  # N,H,W
         union = torch.sum(pt, dim=1) + torch.sum(target_onehot, dim=1)  # N,H,W
-
+        if ignore_index != None:
+            intersection = torch.masked_select(intersection, mask_target)
+            intersection = torch.masked_select(intersection, mask_target)
         dice_coef = torch.mean((2 * torch.sum(intersection) + self.smooth) /
                                (torch.sum(union) + self.smooth))
 
