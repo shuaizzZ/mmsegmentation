@@ -37,6 +37,7 @@ train_pipeline = [
 ]
 val_pipeline = [
     dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', reduce_zero_label=False),
     dict(
         type='MultiScaleFlipAug',
         img_scale=img_scale,
@@ -48,7 +49,7 @@ val_pipeline = [
             dict(type='XYShift', shift=(1, 1)),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
+            dict(type='Collect', keys=['img', 'gt_semantic_seg']),
         ])
 ]
 test_pipeline = [
@@ -65,7 +66,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=64,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
