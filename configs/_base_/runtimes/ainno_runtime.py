@@ -16,6 +16,8 @@ resume_from = None
 # workflow = [('train', 1), ('val', 1)]
 workflow = [('train', 1)]
 cudnn_benchmark = False
-
 work_dir = '/root/public02/manuag/zhangshuai/data/ainno-example/'
-task_name = '2020_1216_18'
+
+segmentor_type = 'manuvision'
+task_name = '2020_1222_14_cbam'
+log_name = 'train'

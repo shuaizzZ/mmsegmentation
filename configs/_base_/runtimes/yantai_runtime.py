@@ -18,5 +18,7 @@ resume_from = None
 workflow = [('train', 1)]
 cudnn_benchmark = False
 work_dir = '/root/public02/manuag/zhangshuai/data/yantai_results'
-task_name = '2020_1216_18'
+
+segmentor_type = 'manuvision'
+task_name = '2020_1222_12_cbam'
 log_name = 'train'
