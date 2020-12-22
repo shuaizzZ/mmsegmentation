@@ -61,6 +61,7 @@ class StatisticTextLoggerHook(LoggerHook):
             [self.prog_bar.update() for i in range(world_size)]
         elif cur_iter == len(runner.data_loader):
             [self.prog_bar.update() for i in range(world_size)]
+            self.prog_bar.file.write('\n')
         else:
             [self.prog_bar.update() for i in range(world_size)]
             
