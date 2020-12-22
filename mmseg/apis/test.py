@@ -145,7 +145,7 @@ def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, out_di
             prog_bar.update()
 
 
-def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
+def multi_gpu_test(model, data_loader, rescale=True, tmpdir=None, gpu_collect=False):
     """Test model with multiple gpus.
 
     This method tests model with multiple gpus and collects the results
@@ -167,13 +167,19 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
 
     model.eval()
     results = []
+    seg_targets = []
     dataset = data_loader.dataset
     rank, world_size = get_dist_info()
     if rank == 0:
         prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
+        if 'gt_semantic_seg' in data:
+            target = data.pop('gt_semantic_seg')
+            for gt in target:
+                gt = gt.cpu().numpy()[0] # 1*h*w ==> h*w
+                seg_targets.append(gt)
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
+            result = model(return_loss=False, rescale=rescale, **data)
         if isinstance(result, list):
             results.extend(result)
         else:
@@ -189,10 +195,13 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         results = collect_results_gpu(results, len(dataset))
     else:
         results = collect_results_cpu(results, len(dataset), tmpdir)
+        seg_targets = collect_results_cpu(seg_targets, len(dataset), tmpdir+'_target')
+    if seg_targets:
+        return [results, seg_targets]
     return results
 
 
-def collect_results_cpu(result_part, size, tmpdir=None):
+def collect_results_cpu(result_part, size, tmpdir=None, filename_tmpl='part_{}.pkl'):
     """Collect results with CPU."""
     rank, world_size = get_dist_info()
     # create a tmp dir if it is not specified
@@ -213,7 +222,7 @@ def collect_results_cpu(result_part, size, tmpdir=None):
     else:
         mmcv.mkdir_or_exist(tmpdir)
     # dump the part result to the dir
-    mmcv.dump(result_part, osp.join(tmpdir, 'part_{}.pkl'.format(rank)))
+    mmcv.dump(result_part, osp.join(tmpdir, filename_tmpl.format(rank)))
     dist.barrier()
     # collect all parts
     if rank != 0:

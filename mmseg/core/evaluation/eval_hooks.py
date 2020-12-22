@@ -71,6 +71,7 @@ class DistEvalHook(EvalHook):
                  interval=1,
                  gpu_collect=False,
                  by_epoch=False,
+                 rescale=True,
                  **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
             raise TypeError(
@@ -80,6 +81,7 @@ class DistEvalHook(EvalHook):
         self.interval = interval
         self.gpu_collect = gpu_collect
         self.by_epoch = by_epoch
+        self.rescale = rescale
         self.eval_kwargs = eval_kwargs
 
     def after_train_iter(self, runner):
@@ -91,6 +93,7 @@ class DistEvalHook(EvalHook):
         results = multi_gpu_test(
             runner.model,
             self.dataloader,
+            rescale = self.rescale,
             tmpdir=osp.join(runner.work_dir, '.eval_hook'),
             gpu_collect=self.gpu_collect)
         if runner.rank == 0:
@@ -106,6 +109,7 @@ class DistEvalHook(EvalHook):
         results = multi_gpu_test(
             runner.model,
             self.dataloader,
+            rescale=self.rescale,
             tmpdir=osp.join(runner.work_dir, '.eval_hook'),
             gpu_collect=self.gpu_collect)
         if runner.rank == 0:
