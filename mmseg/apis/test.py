@@ -16,7 +16,7 @@ from mmcv.image import tensor2imgs, imwrite
 from mmcv.runner import get_dist_info
 
 
-def single_gpu_test(model, data_loader, show=False, out_dir=None):
+def single_gpu_test(model, data_loader, rescale=True, show=False, out_dir=None):
     """Test with single GPU.
 
     Args:
@@ -32,10 +32,18 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
 
     model.eval()
     results = []
+    seg_targets = []
     dataset = data_loader.dataset
-    for data in mmcv.track_iter_progress(data_loader):
+    prog_bar = mmcv.ProgressBar(len(dataset))
+
+    for i, data in enumerate(data_loader):
+        if 'gt_semantic_seg' in data:
+            target = data.pop('gt_semantic_seg')
+            for gt in target:
+                gt = gt.cpu().numpy()[0] # 1*h*w ==> h*w
+                seg_targets.append(gt)
         with torch.no_grad():
-            result = model(return_loss=False, **data)
+            result = model(return_loss=False, rescale=rescale, **data)
         if isinstance(result, list):
             results.extend(result)
         else:
@@ -67,6 +75,10 @@ def single_gpu_test(model, data_loader, show=False, out_dir=None):
                     out_file=out_file)
 
         batch_size = data['img'][0].size(0)
+        for _ in range(batch_size):
+            prog_bar.update()
+    if seg_targets:
+        return [results, seg_targets]
     return results
 
 

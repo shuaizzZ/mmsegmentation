@@ -15,6 +15,7 @@ from .pipelines import Compose
 from .builder import DATASETS
 
 CLASSES = ['background', 'abnormal']
+LABELS = [0, 1]
 PALETTE = [[0, 0, 0], [0, 0, 255]]
 
 @DATASETS.register_module()
@@ -36,7 +37,8 @@ class AinnoDataset(Dataset):
         self.dataset = dataset
         self.CLASSES = classes if classes is not None else CLASSES
         self.PALETTE = palette if palette is not None else PALETTE
-        self.labels=labels
+        self.labels=labels if labels is not None else LABELS
+        self.num_classes = max(self.labels)+1
         self.split = split
         self.test_mode = test_mode
         self.pipeline = Compose(pipeline)
@@ -223,24 +225,18 @@ class AinnoDataset(Dataset):
         if metric not in allowed_metrics:
             raise KeyError('metric {} is not supported'.format(metric))
 
-        gt_seg_maps = self.get_gt_seg_maps()
-        if self.CLASSES is None:
-            num_classes = len(
-                reduce(np.union1d, [np.unique(_) for _ in gt_seg_maps]))
-        else:
-            num_classes = len(self.CLASSES)
-
         ###----------------------- SegmentationMetric -----------------------##
-        self.metrics = SegmentationMetric(num_classes,
+        self.metrics = SegmentationMetric(self.num_classes,
                                           kwargs['defect_metric'],
                                           kwargs['defect_filter'],
                                           ignore_index=ignore_index,
                                           com_f1=kwargs['com_f1'])
         self.metrics.reset()
-        for predicts, targets in zip(results, gt_seg_maps):
-            predicts = np.expand_dims(predicts, 0)
-            targets = np.expand_dims(targets, 0)
-            self.metrics.update_batch_metrics(predicts, targets)
+        predicts, targets = results
+        for predict, target in zip(predicts, targets):
+            predict = np.expand_dims(predict, 0)
+            target = np.expand_dims(target, 0)
+            self.metrics.update_batch_metrics(predict, target)
         eval_results = self.metrics.get_epoch_results()
         eval_results['ClassName'] = self.CLASSES
 

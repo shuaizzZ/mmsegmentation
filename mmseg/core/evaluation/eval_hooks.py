@@ -12,13 +12,19 @@ class EvalHook(Hook):
         interval (int): Evaluation interval (by epochs). Default: 1.
     """
 
-    def __init__(self, dataloader, interval=1, by_epoch=False, **eval_kwargs):
+    def __init__(self,
+                 dataloader,
+                 interval=1,
+                 by_epoch=False,
+                 rescale=True,
+                 **eval_kwargs):
         if not isinstance(dataloader, DataLoader):
             raise TypeError('dataloader must be a pytorch DataLoader, but got '
                             f'{type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
         self.by_epoch = by_epoch
+        self.rescale = rescale
         self.eval_kwargs = eval_kwargs
 
     def after_train_iter(self, runner):
@@ -27,7 +33,7 @@ class EvalHook(Hook):
             return
         from mmseg.apis import single_gpu_test
         runner.log_buffer.clear()
-        results = single_gpu_test(runner.model, self.dataloader, show=False)
+        results = single_gpu_test(runner.model, self.dataloader, rescale=self.rescale, show=False)
         self.evaluate(runner, results)
 
     def after_train_epoch(self, runner):
@@ -36,7 +42,7 @@ class EvalHook(Hook):
             return
         from mmseg.apis import single_gpu_test
         runner.log_buffer.clear()
-        results = single_gpu_test(runner.model, self.dataloader, show=False)
+        results = single_gpu_test(runner.model, self.dataloader, rescale=self.rescale, show=False)
         self.evaluate(runner, results)
 
     def evaluate(self, runner, results):

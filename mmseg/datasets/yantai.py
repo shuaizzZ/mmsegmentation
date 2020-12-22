@@ -8,6 +8,7 @@ from mmseg.datasets.ainno import AinnoDataset
 
 CLASSES = ['background', '1diaojiao', '2liewen', '3kongdong', '4jiaza',
            '5tongyin', '6naobu', '7xiliewen', '8shengxiu', '9baicha']
+LABELS = [0, 1, 2, 3, 3, 0, 0, 2, 0, 1]
 PALETTE = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0], [0, 0, 128],
            [128, 0, 128], ]
 
@@ -16,10 +17,12 @@ class YantaiDataset(AinnoDataset):
     def __init__(self,
                  classes=CLASSES,
                  palette=PALETTE,
+                 labels=LABELS,
                  **kwargs):
         super(YantaiDataset, self).__init__(
             classes=classes,
             palette=palette,
+            labels=labels,
             **kwargs)
 
 
