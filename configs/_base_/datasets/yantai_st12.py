@@ -43,9 +43,9 @@ val_pipeline = [
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
-            # dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
-            #      pad_mode=['range', 'constant'], pad_fill=[[0, 255], 0], pad_expand=1.0),
-            dict(type='XYShift', shift=(6, 3)),
+            dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
+                 pad_mode=['constant', 'constant'], pad_fill=[0, 0], pad_expand=1.0),
+            dict(type='XYShift', shift=(1, 1)),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
@@ -65,7 +65,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=16,
+    samples_per_gpu=32,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
