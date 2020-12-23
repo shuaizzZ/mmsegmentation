@@ -336,22 +336,22 @@ class XYShift(object):
 
     def _get_random_shift(self, results):
         if not self.shift or self.shift==(0, 0):
+            results['shift_xy'] = (0, 0)
             return
         sx = random.randint(-self.shift[0], self.shift[0])
         sy = random.randint(-self.shift[1], self.shift[1])
         results['shift_xy'] = (sx, sy)
 
     def _shift_img(self, results):
-        sx, sy = results['shift_xy']
         img = results['img']
         h, w = img.shape[:2]
         ming, an, fusion = cv2.split(img) # opencv 读图按BGR
 
+        sx, sy = results['shift_xy']
         M = np.float32([[1, 0, sx], [0, 1, sy]])
         shift_an = cv2.warpAffine(an, M, (w, h))
         new_fusion = cv2.addWeighted(ming, 0.5, shift_an, 0.5, 0)
-        img = cv2.merge((ming, shift_an, new_fusion))
-        results['img'] = img
+        results['img'] = cv2.merge((ming, shift_an, new_fusion))
         # abs_shift = abs(sx) + abs(sy)
 
     def __call__(self, results):
