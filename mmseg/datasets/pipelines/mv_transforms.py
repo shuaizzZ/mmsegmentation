@@ -10,16 +10,13 @@ from ..builder import PIPELINES
 class Relabel(object):
     def __init__(self,
                  labels=None,):
-
-        self.label_modify = []
-        for i, label in enumerate(labels):
-            if label != i:
-                self.label_modify.append([i, label])
+        self.labels = labels
 
     def modify_labels(self, mask):
-        if len(self.label_modify) > 0:
-            for modify in self.label_modify:
-                mask[mask == modify[0]] = modify[1]
+        for idx, label in enumerate(self.labels):
+            if idx != label:
+                mask[mask == idx] = label
+        assert np.max(mask) <= max(self.labels), '{} > {}'.format(np.max(mask), max(self.labels))
         return mask
 
     def __call__(self, results):
