@@ -1,26 +1,48 @@
 
-import cv2
 import time
 import threading
+
+import cv2
+import mmcv
 import numpy as np
 import torch
 import torch.nn.functional as F
-from pandas import DataFrame
 
+
+def points_2_box(points):
+    ymin, ymax = points[0].min(), points[0].max()
+    xmin, xmax = points[1].min(), points[1].max()
+    return xmin, ymin, xmax, ymax
+
+def points_2_area(points):
+    area = len(points[0])
+    return area
+
+def points_2_minrect(points):
+    rect = cv2.minAreaRect(np.array(points).transpose())
+    return rect
 
 ## --------------- segmentation metric implemented by zhangshuai --------------- ##
 class SegmentationMetric(object):
     """Computes pixAcc, mIoU, recall, precision, F1 metric scroes
     """
-    def __init__(self, nclass, defect_metric, defect_filter, ignore_index=[], com_f1=True):
+    def __init__(self, nclass, f1_cfg, ignore_index=[]):
         self.nclass = nclass
-        self.defect_metric = defect_metric
-        self.defect_filter = defect_filter
+        self.com_f1 = f1_cfg.com_f1
+        self.metric_type = f1_cfg.type
+        assert self.metric_type in ['pix_iou', 'pix_iof', 'box_iou', 'box_iof']
+        self.metric_threshold = f1_cfg.threshold
+        assert len(self.metric_threshold) >= self.nclass
+        self.filter_type = f1_cfg.defect_filter.type
+        assert self.filter_type in ['', 'box', 'area', 'minRect']
+        filter_size = f1_cfg.defect_filter.size
+        filter_size = filter_size if mmcv.is_list_of(filter_size, list) else [filter_size]
+        self.filter_size = filter_size * self.nclass if len(filter_size) == 1 else filter_size
+        assert len(self.filter_size) == self.nclass
         if ignore_index:
             self.ignore_index = ignore_index if isinstance(ignore_index, list) else [ignore_index]
         else:
             self.ignore_index = []
-        self.com_f1 = com_f1
 
         self.smooth = np.spacing(1)
         self.smooth_n = np.array([self.smooth] * self.nclass)
@@ -44,29 +66,32 @@ class SegmentationMetric(object):
             self.class_pixel_info['union'][c] += np.count_nonzero(class_target_mask | class_predict_mask)
 
     def f1_defect_filter(self, points_pre, pre_id):
-        filter_type = self.defect_filter.TYPE
-        filter_size = self.defect_filter.SIZE_ALL
+        """
+        Take predict as an example to filter defects by size.
+        :param points_pre: 2D array
+        :param pre_id: int
+        :return: filter_flag: bool
+        """
         filter_flag = False
-        if filter_type == '':
-            pass
-        elif filter_type == 'box':
+        if self.filter_type == '':
+            return filter_flag
+
+        filter_size = self.filter_size[pre_id]
+        if self.filter_type == 'box':
             pre_xmin, pre_ymin, pre_xmax, pre_ymax = points_2_box(points_pre)
             if pre_ymax - pre_ymin <= filter_size[0] and pre_xmax - pre_xmin <= filter_size[1]:
                 filter_flag = True
-        elif filter_type == 'area':
+        elif self.filter_type == 'area':
             defect_area = points_2_area(points_pre)
             if defect_area <= filter_size[0]:
                 filter_flag = True
-        elif filter_type == 'minRect':
+        elif self.filter_type == 'minRect':
             rect = points_2_minrect(points_pre)
             ((cx, cy), (w, h), theta) = rect
             long = max(h, w)
             short = min(h, w)
             if long <= filter_size[0] and short <= filter_size[1]:
                 filter_flag = True
-        else:
-            raise RuntimeError('unknown defect filter type!!!')
-
         return filter_flag
 
     def oneimg_tp_pre_tar(self, predict, target):
@@ -79,9 +104,6 @@ class SegmentationMetric(object):
         # if np.count_nonzero(one_predict) + np.count_nonzero(one_target) == 0:
         if cv2.countNonZero(predict) + cv2.countNonZero(target) == 0:
             return
-        ## 参数解析
-        metric_type = self.defect_metric.TYPE
-        metric_threshold = self.defect_metric.THRESHOLD
         ## 初始化
         tp_total_num = 0
         tp_class_num = np.zeros((self.nclass,))
@@ -95,7 +117,6 @@ class SegmentationMetric(object):
         # pre_total_num = min(pre_total_num, tar_total_num * 2)
         pre_class_num = np.zeros((self.nclass,))
         tar_class_num = np.zeros((self.nclass,))
-        # print('pred:{}, tar:{}'.format(pre_total_num, tar_total_num))
         # tp_mask = target * ((predict == target) & (predict != 0))
         # tp_total_num, tp_labels = connected(tp_mask)
         ## 计算总数
@@ -105,7 +126,7 @@ class SegmentationMetric(object):
             tar_class_num[id] = len(np.unique(tar_labels[target == id]))
             # tp_class_num[id] = len(np.unique(tp_labels[tp_mask == id]))
         ## 过滤target缺陷
-        if self.defect_filter.TYPE != '':
+        if self.filter_type != '':
             for tar_index in range(1, tar_total_num):
                 mask_tar = tar_labels == tar_index
                 points_tar = np.where(mask_tar)
@@ -126,13 +147,13 @@ class SegmentationMetric(object):
             ## ignore_index
             if pre_id in self.ignore_index:
                 continue
-            if self.defect_filter.TYPE != '':
-                pre_filter_flag = self.f1_defect_filter(points_tar, tar_id)
-                if pre_filter_flag:
-                    predict[mask_pre] = 0
-                    pre_class_num[pre_id] -= 1
-                    pre_total_num -= 1
-                    continue
+            ## 过滤predict缺陷
+            pre_filter_flag = self.f1_defect_filter(points_pre, pre_id)
+            if pre_filter_flag:
+                predict[mask_pre] = 0
+                pre_class_num[pre_id] -= 1
+                pre_total_num -= 1
+                continue
             mask_inter = mask_pre & (target == pre_id)  ## 交集的mask
             if np.count_nonzero(mask_inter) == 0:  ## 交集为空相当于gt里没有这个缺陷
                 continue
@@ -141,9 +162,9 @@ class SegmentationMetric(object):
             tar_index = tar_labels[mask_inter][0]
             mask_tar = tar_labels == tar_index
             ## 计算度量指标
-            if metric_type == 'pix_iof':
+            if self.metric_type == 'pix_iof':
                 metric_score = np.count_nonzero(mask_inter) / np.count_nonzero(mask_tar)
-            elif metric_type == 'pix_iou':
+            elif self.metric_type == 'pix_iou':
                 mask_union = mask_pre | mask_tar  ## 并集的mask
                 metric_score = np.count_nonzero(mask_inter) / np.count_nonzero(mask_union)
             else:
@@ -155,15 +176,15 @@ class SegmentationMetric(object):
                 inter_xmax = min(pre_xmax, tar_xmax)
                 inter_ymax = min(pre_ymax, tar_ymax)
                 inter_area = (inter_xmax - inter_xmin) * (inter_ymax - inter_ymin)
-                if metric_type == 'box_iof':
+                if self.metric_type == 'box_iof':
                     tar_area = (tar_xmax - tar_xmin) * (tar_ymax - tar_ymin)
                     metric_score = inter_area / tar_area
-                elif metric_type == 'box_iou':
+                elif self.metric_type == 'box_iou':
                     union_area = (pre_xmax - pre_xmin) * (pre_ymax - pre_ymin) + \
                                  (tar_xmax - tar_xmin) * (tar_ymax - tar_ymin) - inter_area
                     metric_score = inter_area / union_area
 
-            if metric_score >= metric_threshold[pre_id]:
+            if metric_score >= self.metric_threshold[pre_id]:
                 tar_labels[mask_tar] = 0  ## 防止一个gt被对应到多个predict,从而导致recall虚高
                 tp_total_num += 1
                 tp_class_num[pre_id] += 1

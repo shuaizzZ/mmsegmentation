@@ -11,8 +11,7 @@ lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=500)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3, best_type='sum')
-evaluation = dict(interval=1, metric='mIoU', rescale=False,
-                  ignore_index=[0], com_f1=True,
-                  defect_metric=dict(TYPE='pix_iof', THRESHOLD=[0, 0.2]),
-                  defect_filter=dict(STATION=False, TYPE='', SIZE_ALL=[16, 16]),
+evaluation = dict(interval=1, metric='mIoU', rescale=False, ignore_index=[0],
+                  f1_cfg=dict(com_f1=True, type='pix_iof', threshold=[0, 0.2],
+                              defect_filter=dict(type='', size=[10, 10])),
                   best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1'])

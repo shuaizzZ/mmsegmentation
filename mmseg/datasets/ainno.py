@@ -205,7 +205,7 @@ class AinnoDataset(Dataset):
 
         return gt_seg_maps
 
-    def evaluate(self, results, metric='mIoU', logger=None, ignore_index=[], **kwargs):
+    def evaluate(self, results, metric='mIoU', logger=None, **kwargs):
         """Evaluate the dataset.
 
         Args:
@@ -217,7 +217,6 @@ class AinnoDataset(Dataset):
         Returns:
             dict[str, float]: Default metrics.
         """
-
         if not isinstance(metric, str):
             assert len(metric) == 1
             metric = metric[0]
@@ -227,10 +226,8 @@ class AinnoDataset(Dataset):
 
         ###----------------------- SegmentationMetric -----------------------##
         self.metrics = SegmentationMetric(self.num_classes,
-                                          kwargs['defect_metric'],
-                                          kwargs['defect_filter'],
-                                          ignore_index=ignore_index,
-                                          com_f1=kwargs['com_f1'])
+                                          ignore_index=kwargs['ignore_index'],
+                                          f1_cfg=kwargs['f1_cfg'])
         self.metrics.reset()
         predicts, targets = results
         for predict, target in zip(predicts, targets):
