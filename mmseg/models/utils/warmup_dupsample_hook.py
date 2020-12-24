@@ -35,7 +35,7 @@ class WarmUpDUpsampleHook(Hook):
     """
 
     def __init__(self, model, cfg, distributed=False, runstate=np.array([1])):
-        self.mix_prec = False
+        self.mix_prec = 1
         self.model = model
         self.dupsampleblock_list = self._find_dupsampleblocks(model)
         self.warmup_du_infos = []
@@ -66,9 +66,11 @@ class WarmUpDUpsampleHook(Hook):
         self.task_length = len(self.data_loader) if self.by_epoch else self._max_runs
 
         for dupsampleblock in self.dupsampleblock_list:
-            warmup_du_model = MirrorDUpsamplingBlock(dupsampleblock)
+            warmup_du_model = MirrorDUpsamplingBlock(dupsampleblock).cuda(cfg.gpu_ids[0])
             optimizer = build_optimizer(warmup_du_model, cfg.warmup_du_cfg.optimizer)
             # put model on gpus
+            if self.mix_prec:
+                warmup_du_model, optimizer = amp.initialize(warmup_du_model, optimizer, opt_level="O1")
             warmup_du_model = parallel_model(warmup_du_model, cfg.gpu_ids, distributed)
             warmup_du_info = {'model': warmup_du_model, 'optimizer': optimizer, 'du_loss': []}
             self.warmup_du_infos.append(warmup_du_info)
@@ -163,5 +165,5 @@ class WarmUpDUpsampleHook(Hook):
             self._run_epochs(runner)
         else:
             self._run_iters(runner)
-
+        runner.logger.info('Ending Warmup Dupsample Block !!!')
         self._destroy_resources()
