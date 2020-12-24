@@ -35,7 +35,7 @@ class WarmUpDUpsampleHook(Hook):
     """
 
     def __init__(self, model, cfg, distributed=False, runstate=np.array([1])):
-        self.mix_prec = 1
+        self.fp16_train = cfg.optimizer_config.type == 'Fp16OptimizerHook'
         self.model = model
         self.dupsampleblock_list = self._find_dupsampleblocks(model)
         self.warmup_du_infos = []
@@ -69,7 +69,7 @@ class WarmUpDUpsampleHook(Hook):
             warmup_du_model = MirrorDUpsamplingBlock(dupsampleblock).cuda(cfg.gpu_ids[0])
             optimizer = build_optimizer(warmup_du_model, cfg.warmup_du_cfg.optimizer)
             # put model on gpus
-            if self.mix_prec:
+            if self.fp16_train:
                 warmup_du_model, optimizer = amp.initialize(warmup_du_model, optimizer, opt_level="O1")
             warmup_du_model = parallel_model(warmup_du_model, cfg.gpu_ids, distributed)
             warmup_du_info = {'model': warmup_du_model, 'optimizer': optimizer, 'du_loss': []}
@@ -92,7 +92,7 @@ class WarmUpDUpsampleHook(Hook):
             warmup_du_info['optimizer'].zero_grad()
             target = data_batch['gt_semantic_seg'].data[0]
             rec_loss = warmup_du_info['model'](target)
-            if self.mix_prec:
+            if self.fp16_train:
                 with amp.scale_loss(rec_loss, warmup_du_info['optimizer']) as scaled_rec_loss:
                     scaled_rec_loss.backward()
             else:
