@@ -13,8 +13,8 @@ labels = [0, 1, 2, 3, 3, 0, 0, 2, 0, 1] # 4
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 img_scale=(512, 512)
-crop_size = (512, 512)
-# crop_size = (128, 128)
+# crop_size = (512, 512)
+crop_size = (512, 768)
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -44,10 +44,10 @@ val_pipeline = [
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
+            dict(type='XYShift', shift=(0, 0)),
             dict(type='Relabel', labels=labels),
             dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
                  pad_mode=['constant', 'constant'], pad_fill=[0, 0], pad_expand=1.0),
-            dict(type='XYShift', shift=(1, 1)),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img', 'gt_semantic_seg']),
