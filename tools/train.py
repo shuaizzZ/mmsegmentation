@@ -1,8 +1,9 @@
+
+import os
 import argparse
 import copy
-import os
-import os.path as osp
 import time
+import os.path as osp
 
 import mmcv
 import torch
@@ -14,7 +15,6 @@ from mmseg.apis import set_random_seed, train_segmentor, trainer_segmentor
 from mmseg.datasets import build_dataset
 from mmseg.models import build_segmentor
 from mmseg.utils import collect_env, get_root_logger
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
@@ -79,8 +79,11 @@ def parse_args():
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
+    # if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+    #     os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(str(i) for i in args.gpu_ids)
 
     return args
+
 
 def replace_BN_cfg(cfg):
     # replace the type of norm_cfg with BN
@@ -121,7 +124,7 @@ def main():
     # init distributed env first, since logger depends on the dist info.
     # if not distributed, replace SyncBN with BN
     if len(cfg.gpu_ids) > 1:
-        assert args.launcher != 'none', 'launcher = {}'.format(args.launcher)
+        assert args.launcher in ['pytorch', 'slurm', 'mpi']
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
     else:
@@ -135,8 +138,8 @@ def main():
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    if cfg.get('log_name'):
-        log_file = osp.join(cfg.work_dir, f'{cfg.log_name}.log')
+    if cfg.get('task_name'):
+        log_file = osp.join(cfg.work_dir, f'{cfg.task_name}.log')
     else:
         log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
@@ -148,24 +151,23 @@ def main():
     env_info_dict = collect_env()
     env_info = '\n'.join([f'{k}: {v}' for k, v in env_info_dict.items()])
     dash_line = '-' * 60 + '\n'
-    logger.info('Environment info:\n' + dash_line + env_info + '\n' +
-                dash_line)
+    logger.info('Environment info:\n' + dash_line + env_info + '\n' + dash_line)
     meta['env_info'] = env_info
+    # set random seeds
+    cfg.seed = args.seed if args.seed is not None else cfg.get('seed')
+    cfg.deterministic = args.deterministic if args.deterministic is not None else cfg.get('deterministic')
+    if cfg.seed is not None:
+        logger.info(f'Set random seed to {cfg.seed}, deterministic: '
+                    f'{cfg.deterministic}')
+        set_random_seed(cfg.seed, deterministic=cfg.deterministic)
+    meta['seed'] = cfg.seed
+    meta['exp_name'] = osp.basename(args.config) + ' | ' + cfg.get('task_name')
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
-    # set random seeds
-    if args.seed is not None:
-        logger.info(f'Set random seed to {args.seed}, deterministic: '
-                    f'{args.deterministic}')
-        set_random_seed(args.seed, deterministic=args.deterministic)
-    cfg.seed = args.seed
-    meta['seed'] = args.seed
-    meta['exp_name'] = osp.basename(args.config)
 
     model = build_segmentor(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
-
     logger.info(model)
 
     datasets = [build_dataset(cfg.data.train)]
