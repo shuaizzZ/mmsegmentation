@@ -134,7 +134,7 @@ class StatisticTextLoggerHook(LoggerHook):
             if self.by_epoch:
                 log_str = f'Epoch({log_dict["mode"]}) ' \
                     f'[{log_dict["epoch"]}/{runner.max_epochs}]\t'
-                log_str += print_defect_metrics(log_dict, CLASSES=log_dict['ClassName'])
+                log_str += print_defect_metrics(log_dict, class_names=runner.data_loader.dataset.CLASSES)
             else:
                 log_str = f'Iter({log_dict["mode"]}) [{log_dict["iter"]}]\t'
 

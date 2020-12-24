@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 
 from mmcv.runner.dist_utils import master_only
 from mmseg.core import mean_iou, SegmentationMetric
-from mmseg.utils import get_root_logger, print_metrics
+from mmseg.utils import get_root_logger
 
 from .pipelines import Compose
 from .builder import DATASETS
@@ -37,8 +37,9 @@ class AinnoDataset(Dataset):
         self.dataset = dataset
         self.CLASSES = classes if classes is not None else CLASSES
         self.PALETTE = palette if palette is not None else PALETTE
-        self.labels=labels if labels is not None else LABELS
+        self.labels = labels if labels is not None else LABELS
         self.num_classes = max(self.labels)+1
+        assert len(self.CLASSES) == self.num_classes
         self.split = split
         self.test_mode = test_mode
         self.pipeline = Compose(pipeline)
@@ -235,6 +236,5 @@ class AinnoDataset(Dataset):
             target = np.expand_dims(target, 0)
             self.metrics.update_batch_metrics(predict, target)
         eval_results = self.metrics.get_epoch_results()
-        eval_results['ClassName'] = self.CLASSES
 
-        return  eval_results
+        return eval_results
