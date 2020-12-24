@@ -34,7 +34,7 @@ class SegmentationMetric(object):
         self.metric_threshold = f1_cfg.threshold
         assert len(self.metric_threshold) >= self.nclass
         self.filter_type = f1_cfg.defect_filter.type
-        assert self.filter_type in ['', 'box', 'area', 'minRect']
+        assert self.filter_type in ['none', 'box', 'area', 'minRect']
         filter_size = f1_cfg.defect_filter.size
         filter_size = filter_size if mmcv.is_list_of(filter_size, list) else [filter_size]
         self.filter_size = filter_size * self.nclass if len(filter_size) == 1 else filter_size
@@ -73,7 +73,7 @@ class SegmentationMetric(object):
         :return: filter_flag: bool
         """
         filter_flag = False
-        if self.filter_type == '':
+        if self.filter_type == 'none':
             return filter_flag
 
         filter_size = self.filter_size[pre_id]
@@ -126,7 +126,7 @@ class SegmentationMetric(object):
             tar_class_num[id] = len(np.unique(tar_labels[target == id]))
             # tp_class_num[id] = len(np.unique(tp_labels[tp_mask == id]))
         ## 过滤target缺陷
-        if self.filter_type != '':
+        if self.filter_type != 'none':
             for tar_index in range(1, tar_total_num):
                 mask_tar = tar_labels == tar_index
                 points_tar = np.where(mask_tar)
