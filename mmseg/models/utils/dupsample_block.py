@@ -3,6 +3,7 @@ import torch
 from torch import nn as nn
 from .custom_blocks import int_size
 from ..builder import build_loss
+from mmcv.runner import auto_fp16, force_fp32
 
 
 class DUpsamplingBlock(nn.Module):
@@ -49,6 +50,7 @@ class DUpsamplingBlock(nn.Module):
 class MirrorDUpsamplingBlock(nn.Module):
     def __init__(self, du_block, loss_cfg=dict(type='MSELoss')):
         super(MirrorDUpsamplingBlock, self).__init__()
+        self.fp16_enabled = False
         self.inplanes = du_block.inplanes
         self.scale = du_block.scale
         self.num_class = du_block.num_class
@@ -64,7 +66,7 @@ class MirrorDUpsamplingBlock(nn.Module):
         C = self.num_class
 
         # N, C, H, W
-        sample = torch.zeros(N, C, H, W).cuda(mask.device.index)
+        sample = torch.zeros(N, C, H, W)#.cuda(mask.device.index)
 
         # 必须要把255这个标签去掉，否则下面scatter_会出错(但不在这里报错)
         mask[mask > C] = 0
@@ -86,13 +88,24 @@ class MirrorDUpsamplingBlock(nn.Module):
         seggt_onehot = seggt_onehot.contiguous().view((N, WdC, HdC, CmSS))
 
         # N, C*scale*scale, H/sacle, W/sacle
-        seggt_onehot = seggt_onehot.permute(0, 3, 2, 1)
+        seggt_onehot = seggt_onehot.permute(0, 3, 2, 1).float()
         return seggt_onehot
 
-    def forward(self, seggt):
-        seggt_onehot = self.mirror_process(seggt)
+    @auto_fp16()
+    def forward(self, seggt_onehot):
+        seggt_onehot_reconstructed = self.forward_train(seggt_onehot)
+        loss = self.losses(seggt_onehot, seggt_onehot_reconstructed)
+        return loss
+
+    @auto_fp16()
+    def forward_train(self, seggt_onehot):
         seggt_onehot_reconstructed = self.conv_p(seggt_onehot)
         seggt_onehot_reconstructed = self.conv_w(seggt_onehot_reconstructed)
-        loss = self.loss_du(seggt_onehot, seggt_onehot_reconstructed)
+        return seggt_onehot_reconstructed
 
+    @force_fp32()
+    def losses(self, seggt_onehot, seggt_onehot_reconstructed):
+        loss = self.loss_du(seggt_onehot, seggt_onehot_reconstructed)
+        if loss.item() == 0:
+            print()
         return loss
