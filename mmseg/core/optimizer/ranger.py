@@ -33,7 +33,8 @@ class Ranger(Optimizer):
     def __init__(self, params, lr=1e-3,  # lr
                  alpha=0.5, k=6, N_sma_threshhold=5,  # Ranger options
                  betas=(.95, 0.999), eps=1e-5, weight_decay=0,  # Adam options
-                 use_gc=True, gc_conv_only=False
+                 use_gc=True, gc_conv_only=False,
+                 info=False,
                  # Gradient centralization on or off, applied to conv layers only or conv + fc layers
                  ):
 
@@ -73,12 +74,12 @@ class Ranger(Optimizer):
 
         # level of gradient centralization
         self.gc_gradient_threshold = 3 if gc_conv_only else 1
-
-        print(f"Ranger optimizer loaded. \nGradient Centralization usage = {self.use_gc}")
-        if (self.use_gc and self.gc_gradient_threshold == 1):
-            print(f"GC applied to both conv and fc layers")
-        elif (self.use_gc and self.gc_gradient_threshold == 3):
-            print(f"GC applied to conv layers only")
+        if info:
+            print(f"Ranger optimizer loaded. \nGradient Centralization usage = {self.use_gc}")
+            if (self.use_gc and self.gc_gradient_threshold == 1):
+                print(f"GC applied to both conv and fc layers")
+            elif (self.use_gc and self.gc_gradient_threshold == 3):
+                print(f"GC applied to conv layers only")
 
     def __setstate__(self, state):
         print("set state called")
