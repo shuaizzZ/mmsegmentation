@@ -168,10 +168,11 @@ def trainer_segmentor(model,
             meta=meta))
 
     ## register hooks
-    ## the priority priority of log_hook is VERY_LOW, and others is NORMAL
+    ## the priority of log_hook is VERY_LOW, and others is NORMAL
     checkpoint_config = cfg.checkpoint_config
     checkpoint_config.setdefault('type', 'TrainerCheckpointHook')
     checkpoint_config.setdefault('priority', 'LOW')
+    cfg.optimizer_config = cfg.get('optimizer_config', dict())
     trainer_checkpoint_hook = runner.register_hook_from_cfg(checkpoint_config)
     runner.register_training_hooks(cfg.lr_config, cfg.optimizer_config,
                                    trainer_checkpoint_hook, cfg.log_config,
