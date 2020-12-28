@@ -51,10 +51,10 @@ class TrainerLogHook(Hook):
     def after_train_epoch(self, runner):
         log_info = [runner.epoch]
         for name in runner.best_metrics:
-            log_info.append(round(runner.log_buffer.output[name][runner.best_type] * 100, self.ndigits))
+            log_info.append(round(runner.log_buffer.output[name][runner.best_type], self.ndigits))
         for c in range(1, self.num_classes):
             for name in runner.best_metrics:
-                log_info.append(round(runner.log_buffer.output[name]['class'][c] * 100, self.ndigits))
+                log_info.append(round(runner.log_buffer.output[name]['class'][c], self.ndigits))
         self.log_csv.append(log_info)
 
 

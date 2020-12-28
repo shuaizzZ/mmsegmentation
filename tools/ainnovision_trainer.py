@@ -38,8 +38,8 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             if mvpara.get(mvfield, None):
                 mmpara[mmfield] = mvpara.get(mvfield)
     ## model
-    if mmcfg.pretrained_name in pretrained_models:
-        mmcfg.model.pretrained = get_pretrained_path(mmcfg.pretrained_name)
+    # if mmcfg.pretrained_name in pretrained_models:
+    #     mmcfg.model.pretrained = get_pretrained_path(mmcfg.pretrained_name)
     mmcfg.norm_cfg.type = "BN"
     for module, config in mmcfg.model.items():
         if isinstance(config, dict) and 'norm_cfg' in config.keys():
@@ -56,15 +56,11 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             modify_if_exist(mmcfg._cfg_dict['data'][mode], [para],
                             mmcfg._cfg_dict, [para])
 
-    # metrics
-    mmcfg.evaluation.com_f1 = mvcfg.VAL.COM_F1
-    mmcfg.evaluation.defect_metric = mvcfg.VAL.METRIC
-    mmcfg.evaluation.defect_filter = mvcfg.VAL.DEFECT_FILTER     
-    # train label
-    mmcfg.labels = mvcfg.DATASETS.LABELS
-    mmcfg.num_classes = max(mmcfg.labels)+1
-    mmcfg.model.decode_head.num_classes = mmcfg.num_classes
-    mmcfg.model.auxiliary_head.num_classes = mmcfg.num_classes
+    # TODO train label
+    # mmcfg.labels = mvcfg.DATASETS.LABELS
+    # mmcfg.num_classes = max(mmcfg.labels)+1
+    # mmcfg.model.decode_head.num_classes = mmcfg.num_classes
+    # mmcfg.model.auxiliary_head.num_classes = mmcfg.num_classes
     # pipeline train
     mmcfg.crop_size = mvcfg.DATASETS.AUGMENT.CROP_SIZE
     option_para = {'Relabel': ['labels'],
@@ -90,7 +86,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.val.pipeline = mmcfg.val_pipeline
     # pipeline test
     option_para = {'MVCrop': ['crop_size'],}
-    for i, trans_dict in enumerate(mmcfg.val_pipeline):
+    for i, trans_dict in enumerate(mmcfg.test_pipeline):
         trans_type = trans_dict.type
         if trans_type in option_para.keys():
             modify_if_exist(mmcfg._cfg_dict['test_pipeline'][i],
@@ -103,6 +99,7 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     mmcfg.data.workers_per_gpu = 0
 
     ## schedule
+    mmcfg.runner.max_epochs = mvcfg.TRAIN.END_EPOCH
     # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
     # mmcfg.optimizer.momentum = mvcfg.SOLVER.OPT.MOMENTUM
     # mmcfg.optimizer.weight_decay = mvcfg.SOLVER.OPT.WEIGHT_DECAY

@@ -39,7 +39,7 @@ class AinnoDataset(Dataset):
         self.PALETTE = palette if palette is not None else PALETTE
         self.labels = labels if labels is not None else LABELS
         self.num_classes = max(self.labels)+1
-        assert len(self.CLASSES) == self.num_classes
+        assert len(self.CLASSES) == self.num_classes, '{} != {}'.format(len(self.CLASSES), self.num_classes)
         self.split = split
         self.test_mode = test_mode
         self.pipeline = Compose(pipeline)

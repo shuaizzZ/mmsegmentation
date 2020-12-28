@@ -4,7 +4,6 @@ num_classes = 2
 # dupsample=dict(scale=8)
 dupsample=None
 align_corners=False
-pretrained_name='resnet18'
 model = dict(
     type='EncoderDecoder',
     pretrained='https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -24,7 +23,7 @@ model = dict(
         type='PSPHead',
         in_channels=512,
         in_index=3,
-        channels=128,
+        channels=256,
         dropout_ratio=0.1,
         num_classes=num_classes,
         norm_cfg=norm_cfg,
@@ -32,15 +31,15 @@ model = dict(
         dupsample=dupsample,
         ppm_cfg=dict(ppm_channels=128,
                      pool_scales=(2, 4, 8, 16),
-                     pooling='mix',
-                     attention_cfg=dict(type='MCBAM', ratio=16, kernel_size=7),),
+                     pooling='avg',
+                     attention_cfg=dict(type='CBAM', ratio=16, kernel_size=7),),
         loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
                      dict(type='DiceLoss', loss_weight=1.0),]
     ),
     auxiliary_head=dict(
         type='FCNHead',
-        in_channels=256,
-        in_index=2,
+        in_channels=512,
+        in_index=3,
         channels=128,
         num_convs=1,
         concat_input=False,
@@ -57,7 +56,7 @@ warmup_du_cfg = dict(
     interval=10,
     optimizer=dict(type='SGD', lr=0.01),
     # optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
-    total_runs=40,
+    total_runs=0,
     by_epoch=False)
 # model training and testing settings
 train_cfg = dict()
@@ -67,12 +66,8 @@ test_cfg = dict(mode='whole')
 data_root = '/root/public02/manuag/zhangshuai/data/cicai_data/cicai-hangzhou'
 dataset_type = 'AinnoDataset'
 dataset = 'example'
-classes = ['background', '1diaojiao', '2liewen', '3kongdong']
-#INDEXES: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-#LABELS = [0, 1, 1, 1, 1, 1, 0, 1, 1, 0] # 2
-#LABELS = [0, 1, 2, 0, 0, 0, 0, 2, 0, 0] # 3
-#LABELS = [0, 1, 2, 3, 3, 0, 0, 2, 3, 0] # 4
-labels = [0, 1, 2, 3, 3, 0, 0, 2, 0, 1] # 4
+classes = ['background', 'abnormal']
+labels = [0, 1]
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -101,17 +96,19 @@ train_pipeline = [
 ]
 val_pipeline = [
     dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', reduce_zero_label=False),
     dict(
         type='MultiScaleFlipAug',
         img_scale=img_scale,
         # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
         transforms=[
-            # dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
-            #      pad_mode=['range', 'constant'], pad_fill=[[0, 255], 0], pad_expand=1.0),
+            dict(type='Relabel', labels=labels),
+            dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
+                 pad_mode=['constant', 'constant'], pad_fill=[0, 0], pad_expand=1.0),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
+            dict(type='Collect', keys=['img', 'gt_semantic_seg']),
         ])
 ]
 test_pipeline = [
@@ -178,21 +175,19 @@ cudnn_benchmark = False
 work_dir = './model'
 
 # ======================================= schedule settings ======================================= #
-# optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
-optimizer = dict(type='Adamax', lr=0.01, weight_decay=0.0005)
-paramwise_cfg = dict(custom_keys={'.backbone': dict(lr_mult=0.1, decay_mult=0.9)})
-optimizer_config = dict()
+optimizer = dict(type='Ranger', lr=0.01, weight_decay=0.0005,
+                 paramwise_cfg = dict(custom_keys={'backbone': dict(lr_mult=0.1)})) # , decay_mult=0.9
+optimizer_config = dict(type='Fp16OptimizerHook', loss_scale=512.0)
 # learning policy
-# lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=False)
 lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
-                 warmup='linear', warmup_iters=6, warmup_ratio=0.01,
+                 warmup='linear', warmup_iters=5, warmup_ratio=0.01,
                  warmup_by_epoch=True)
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=300)
+runner = dict(type='EpochBasedRunner', max_epochs=200)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
-evaluation = dict(interval=1, metric='mIoU', ignore_index=[0], com_f1=True,
-                  defect_metric=dict(TYPE='pix_iof', THRESHOLD=[0, 0.3]),
-                  defect_filter=dict(STATION=False, TYPE='', SIZE_ALL=[16, 16]),
+evaluation = dict(interval=1, metric='mIoU', rescale=False, ignore_index=[0],
+                  f1_cfg=dict(com_f1=True, type='pix_iof', threshold=[0, 0.3],
+                              defect_filter=dict(type='box', size=[10, 10])),
                   best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1'])
 # TODO load best_metrics when resume
 
