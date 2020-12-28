@@ -46,7 +46,6 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             mmcfg._cfg_dict['model'][module]['norm_cfg']['type'] = mmcfg.norm_cfg.type
 
     ## dataset
-    # mmcfg.dataset_type = mvcfg.DATASETS.TYPE
     mmcfg.data_root = mvcfg.DATASETS.ROOT
     mmcfg.classes = mvcfg.DATASETS.CLASSES
     for mode in ['train', 'val', 'test']:
@@ -57,10 +56,6 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
                             mmcfg._cfg_dict, [para])
 
     # TODO train label
-    # mmcfg.labels = mvcfg.DATASETS.LABELS
-    # mmcfg.num_classes = max(mmcfg.labels)+1
-    # mmcfg.model.decode_head.num_classes = mmcfg.num_classes
-    # mmcfg.model.auxiliary_head.num_classes = mmcfg.num_classes
     # pipeline train
     mmcfg.crop_size = mvcfg.DATASETS.AUGMENT.CROP_SIZE
     option_para = {'Relabel': ['labels'],
@@ -100,12 +95,9 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
 
     ## schedule
     mmcfg.runner.max_epochs = mvcfg.TRAIN.END_EPOCH
-    # mmcfg.optimizer.type = mvcfg.SOLVER.OPT.OPTIMIZER
-    # mmcfg.optimizer.momentum = mvcfg.SOLVER.OPT.MOMENTUM
-    # mmcfg.optimizer.weight_decay = mvcfg.SOLVER.OPT.WEIGHT_DECAY
     ## runtime
-    if mvcfg.TRAIN.FT.RESUME:
-        mmcfg.load_from = mvcfg.TRAIN.FT.CHECKPATH
+    # if mvcfg.TRAIN.FT.RESUME:
+    #     mmcfg.load_from = mvcfg.TRAIN.FT.CHECKPATH
     mmcfg.work_dir = osp.join(mmcfg.data_root, 'models')
 
     return mmcfg
