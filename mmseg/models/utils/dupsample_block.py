@@ -66,7 +66,7 @@ class MirrorDUpsamplingBlock(nn.Module):
         C = self.num_class
 
         # N, C, H, W
-        sample = torch.zeros(N, C, H, W)#.cuda(mask.device.index)
+        sample = torch.zeros(N, C, H, W).type_as(mask)
 
         # 必须要把255这个标签去掉，否则下面scatter_会出错(但不在这里报错)
         mask[mask > C] = 0
@@ -91,8 +91,9 @@ class MirrorDUpsamplingBlock(nn.Module):
         seggt_onehot = seggt_onehot.permute(0, 3, 2, 1).float()
         return seggt_onehot
 
-    @auto_fp16()
-    def forward(self, seggt_onehot):
+    # @auto_fp16()
+    def forward(self, seggt):
+        seggt_onehot = self.mirror_process(seggt)
         seggt_onehot_reconstructed = self.forward_train(seggt_onehot)
         loss = self.losses(seggt_onehot, seggt_onehot_reconstructed)
         return loss
@@ -106,6 +107,4 @@ class MirrorDUpsamplingBlock(nn.Module):
     @force_fp32()
     def losses(self, seggt_onehot, seggt_onehot_reconstructed):
         loss = self.loss_du(seggt_onehot, seggt_onehot_reconstructed)
-        if loss.item() == 0:
-            print()
         return loss

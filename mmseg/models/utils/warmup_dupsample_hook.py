@@ -35,7 +35,7 @@ def reduce_loss_for_dist(loss_value):
     return loss_value
 
 
-class AmpWarmUpDUpsampleHook(Hook):
+class WarmUpDUpsampleHookAmp(Hook):
     """WarmUpDUpsampleHook hook.
 
     Attributes:
@@ -101,8 +101,8 @@ class AmpWarmUpDUpsampleHook(Hook):
         for warmup_du_info in self.warmup_du_infos:
             warmup_du_info['optimizer'].zero_grad()
             seggt = data_batch['gt_semantic_seg'].data[0]
-            seggt_onehot = warmup_du_info['model'].module.mirror_process(seggt)
-            rec_loss = warmup_du_info['model'](seggt_onehot)
+            # seggt_onehot = warmup_du_info['model'].module.mirror_process(seggt)
+            rec_loss = warmup_du_info['model'](seggt)
             if self.fp16_train:
                 with amp.scale_loss(rec_loss, warmup_du_info['optimizer']) as scaled_rec_loss:
                     scaled_rec_loss.backward()
@@ -220,14 +220,13 @@ class WarmUpDUpsampleHook(Hook):
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
             seed=cfg.seed,
-            drop_last=True,
-            pin_memory=False)
+            drop_last=True,)
         self.task_length = len(self.data_loader) if self.by_epoch else self._max_runs
 
         for dupsampleblock in self.dupsampleblock_list:
             warmup_du_model = MirrorDUpsamplingBlock(dupsampleblock).cuda(cfg.gpu_ids[0])
-            optimizer = build_optimizer(warmup_du_model, cfg.warmup_du_cfg.optimizer)
             warmup_du_model = parallel_model(warmup_du_model, cfg.gpu_ids, distributed)
+            optimizer = build_optimizer(warmup_du_model, cfg.warmup_du_cfg.optimizer)
             warmup_du_info = {'model': warmup_du_model,
                               'optimizer': optimizer,
                               'du_loss': [],
@@ -253,8 +252,11 @@ class WarmUpDUpsampleHook(Hook):
         for i, warmup_du_info in enumerate(self.warmup_du_infos):
             warmup_du_info['optimizer'].zero_grad()
             seggt = data_batch['gt_semantic_seg'].data[0]
-            seggt_onehot = warmup_du_info['model'].module.mirror_process(seggt)
-            warmup_du_info['loss'] = warmup_du_info['model'](seggt_onehot)
+            # if hasattr(warmup_du_info['model'], 'module'):
+            #     seggt_onehot = warmup_du_info['model'].module.mirror_process(seggt)
+            # else:
+            #     seggt_onehot = warmup_du_info['model'].mirror_process(seggt)
+            warmup_du_info['loss'] = warmup_du_info['model'](seggt)
             # loss collect
             if self.distributed:
                 warmup_du_info['du_loss'].append(reduce_loss_for_dist(warmup_du_info['loss']).item())
