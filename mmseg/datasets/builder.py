@@ -9,6 +9,8 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import Registry, build_from_cfg
 from mmcv.utils.parrots_wrapper import DataLoader, PoolDataLoader
 from torch.utils.data import DistributedSampler
+# TODO
+# from mmseg.datasets.data_prefetcher import DataPrefetcher
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973

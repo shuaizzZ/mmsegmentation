@@ -13,6 +13,7 @@ from .voc import PascalVOCDataset
 from .yantai import YantaiDataset
 from .ainno import AinnoDataset
 
+from .data_prefetcher import DataPrefetcher
 __all__ = [
     'CustomDataset', 'build_dataloader', 'ConcatDataset', 'RepeatDataset',
     'DATASETS', 'build_dataset', 'PIPELINES', 'CityscapesDataset',
@@ -20,4 +21,5 @@ __all__ = [
     'ChaseDB1Dataset', 'DRIVEDataset', 'HRFDataset', 'STAREDataset',
 
     'YantaiDataset', 'AinnoDataset',
+    'DataPrefetcher'
 ]
