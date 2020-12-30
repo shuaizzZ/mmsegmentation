@@ -57,13 +57,11 @@ class StatisticTextLoggerHook(LoggerHook):
         rank, world_size = get_dist_info()
         cur_iter = self.get_iter(runner, inner_iter=True)        
         if cur_iter == 1:
-            self.prog_bar = mmcv.ProgressBar(len(runner.data_loader)*world_size)        
-            [self.prog_bar.update() for i in range(world_size)]
-        elif cur_iter == len(runner.data_loader):
-            [self.prog_bar.update() for i in range(world_size)]
+            self.prog_bar = mmcv.ProgressBar(len(runner.data_loader)) #*world_size
+        # [self.prog_bar.update() for i in range(world_size)]
+        self.prog_bar.update()
+        if cur_iter == len(runner.data_loader):
             self.prog_bar.file.write('\n')
-        else:
-            [self.prog_bar.update() for i in range(world_size)]
             
     def after_train_iter(self, runner):
         self._print_train_progressbar(runner)
