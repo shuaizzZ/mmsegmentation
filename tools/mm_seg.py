@@ -67,7 +67,7 @@ train_cfg = dict()
 test_cfg = dict(mode='whole')
 
 # ======================================= dataset settings ======================================= #
-data_root = '/root/public02/manuag/zhangshuai/data/cicai_data/cicai-hangzhou'
+data_root = '/root/public02/manuag/zhangshuai/data/ainno-example'
 dataset_type = 'AinnoDataset'
 dataset = 'example'
 classes = ['background', 'abnormal']

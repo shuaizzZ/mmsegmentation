@@ -20,8 +20,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
     parser.add_argument(
         '--config',
-        # default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
-        default='../configs/pspnet/dupsp_r18_yantai_st12.py',
+        default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
+        # default='../configs/pspnet/dupsp_r18_yantai_st12.py',
         # default='../configs/pspnet/dupsp_r18_ainno.py',
         help='train config file path')
     parser.add_argument(
@@ -138,10 +138,9 @@ def main():
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    if cfg.get('task_name'):
-        log_file = osp.join(cfg.work_dir, f'{cfg.task_name}.log')
-    else:
-        log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
+    task_name = cfg.task_name if cfg.get('task_name') else timestamp
+    log_file = osp.join(cfg.work_dir, f'{task_name}.log')
+
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
 
     # init the meta dict to record some important information such as
@@ -161,7 +160,7 @@ def main():
                     f'{cfg.deterministic}')
         set_random_seed(cfg.seed, deterministic=cfg.deterministic)
     meta['seed'] = cfg.seed
-    meta['exp_name'] = osp.basename(args.config) + ' | ' + cfg.get('task_name')
+    meta['exp_name'] = osp.basename(args.config) + ' | ' + task_name
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
