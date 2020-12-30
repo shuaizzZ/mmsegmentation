@@ -20,8 +20,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
     parser.add_argument(
         '--config',
-        default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
-        # default='../configs/pspnet/dupsp_r18_yantai_st12.py',
+        # default='../configs/pspnet/pspnet_r50-d8_512x512_80k_ade20k.py',
+        default='../configs/pspnet/dupsp_r18_yantai_st12.py',
         # default='../configs/pspnet/dupsp_r18_ainno.py',
         help='train config file path')
     parser.add_argument(
@@ -99,8 +99,7 @@ def main():
     if args.options is not None:
         cfg.merge_from_dict(args.options)
     # set cudnn_benchmark
-    if cfg.get('cudnn_benchmark', False):
-        torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = cfg.get('cudnn_benchmark', False)
 
     # work_dir is determined in this priority: CLI > segment in file > filename
     if args.work_dir is not None:
