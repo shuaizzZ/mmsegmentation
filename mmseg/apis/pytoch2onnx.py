@@ -115,7 +115,10 @@ def pytorch2onnx(model,
             export_params=True,
             keep_initializers_as_inputs=True,
             verbose=show,
-            opset_version=opset_version)
+            opset_version=opset_version,
+            input_names=["input"],
+            output_names=['output'],
+            dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}},)
 
     model.forward = origin_forward
     print(f'Successfully exported ONNX model: {output_file}')
