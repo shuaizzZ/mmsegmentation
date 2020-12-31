@@ -1,6 +1,7 @@
 # ======================================= model settings ======================================= #
 norm_cfg = dict(type='BN', requires_grad=True)
 num_classes = 2
+dropout_ratio=0.1
 # dupsample=dict(scale=8)
 dupsample=None
 # attention_cfg=dict(type='TPA')
@@ -26,7 +27,7 @@ model = dict(
         in_channels=512,
         in_index=3,
         channels=128,
-        dropout_ratio=0.1,
+        dropout_ratio=dropout_ratio,
         num_classes=num_classes,
         norm_cfg=norm_cfg,
         align_corners=align_corners,
@@ -46,7 +47,7 @@ model = dict(
         channels=128,
         num_convs=1,
         concat_input=False,
-        dropout_ratio=0.1,
+        dropout_ratio=dropout_ratio,
         num_classes=num_classes,
         norm_cfg=norm_cfg,
         align_corners=align_corners,
@@ -167,6 +168,7 @@ log_config = dict(
    ])
 seed = 4
 deterministic = None
+cudnn_benchmark = False
 gpu_ids = [0]
 
 dist_params = dict(backend='nccl')
@@ -175,7 +177,6 @@ load_from = None
 resume_from = None
 # workflow = [('train', 1), ('val', 1)]
 workflow = [('train', 1)]
-cudnn_benchmark = False
 work_dir = './model'
 
 # ======================================= schedule settings ======================================= #

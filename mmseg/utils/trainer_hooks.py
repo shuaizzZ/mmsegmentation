@@ -25,6 +25,12 @@ class CheckRunstateHook(Hook):
         if self.runstate[0] == 0:
             sys.exit(0)
 
+    def after_train_epoch(self, runner):
+        # for _epoch_balance in yantai dataset
+        # print('before', runner.data_loader.dataset.img_infos[1]['filename'])
+        if hasattr(runner.data_loader.dataset, '_epoch_balance'):
+            runner.data_loader.dataset._epoch_balance()
+        # print('after', runner.data_loader.dataset.img_infos[1]['filename'])
 
 class TrainerLogHook(Hook):
     def __init__(self, trainer_csv_path, num_classes=None, ndigits=3):
@@ -130,7 +136,7 @@ class TrainerCheckpointHook(Hook):
             runner.cur_eval_res[name] = cur_val
             # if cur_val==1, that is mean : value = (0+smooth)/(0+smooth) = 1,
             # we thank that this should't be the best value.
-            if cur_val > best_val[0] and cur_val < 1:
+            if cur_val >= best_val[0] and cur_val < 1:
                 runner.best_eval_res[name] = [cur_val, runner.epoch+ 1]
                 runner.save_checkpoint(
                     self.out_dir, save_optimizer=self.save_optimizer,
