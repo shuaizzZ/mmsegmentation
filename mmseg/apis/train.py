@@ -205,7 +205,7 @@ def trainer_segmentor(model,
     if not (cfg.resume_from and cfg.load_from) and cfg.dupsample:
         runner.register_hook(WarmUpDUpsampleHook(model, cfg, distributed, runstate), priority='HIGH')
     ## register CheckRunstateHook and TrainerLogHook
-    runner.register_hook(CheckRunstateHook(runstate))
+    runner.register_hook(CheckRunstateHook(runstate), priority='HIGH')
     runner.register_hook(TrainerLogHook(cfg.trainer_csv_path, cfg.num_classes), priority='LOW')
     runner.logger.info('Start Training, Good Luck !!!')
     runner.run(data_loaders, cfg.workflow)
