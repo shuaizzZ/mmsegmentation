@@ -24,6 +24,9 @@ class YantaiDataset(AinnoDataset):
             palette=palette,
             labels=labels,
             **kwargs)
+        from multiprocessing import Manager
+        # self.manager = Manager()
+        # self.total_index = self.manager.Value(int, 0)
 
 
     def _pre_class_balance(self, max_times=10):
@@ -38,7 +41,6 @@ class YantaiDataset(AinnoDataset):
         self.class_avg_num = int(ng_num / len(self.class_samples.keys()))
         self.dataset_infos['class_nums'] = class_nums_str
         # 按长度升序
-        # a = sorted(self.class_samples.items(), key=lambda x: x[1])
         sort_samples.sort(key=lambda x: len(x))
         class_times = [self.class_avg_num / len(sort_samples[i]) for i in range(len(sort_samples))]
         for t in class_times:
@@ -136,15 +138,17 @@ class YantaiDataset(AinnoDataset):
             self.ok_len, self.ng_len, self.set_len)
         time.sleep(2)
 
+    def epoch_ops(self):
+        """Some operations that need to be performed every n epochs. """
+        self._epoch_balance()
 
     def __getitem__(self, idx):
         if self.test_mode:
             return self.prepare_test_img(idx)
         else:
-            if self.split == 'train':
-                self.total_index += 1
-                if self.total_index % self.set_len == 0:
-                    self.epoch_balance()
+            # if self.split == 'train':
+            #     if self.total_index == 0:
+            #         self._epoch_balance()
             return self.prepare_train_img(idx)
 
 

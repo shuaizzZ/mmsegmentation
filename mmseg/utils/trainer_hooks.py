@@ -26,10 +26,9 @@ class CheckRunstateHook(Hook):
             sys.exit(0)
 
     def after_train_epoch(self, runner):
-        # for _epoch_balance in yantai dataset
         # print('before', runner.data_loader.dataset.img_infos[1]['filename'])
-        if hasattr(runner.data_loader.dataset, '_epoch_balance'):
-            runner.data_loader.dataset._epoch_balance()
+        if hasattr(runner.data_loader.dataset, 'epoch_ops'):
+            runner.data_loader.dataset.epoch_ops()
         # print('after', runner.data_loader.dataset.img_infos[1]['filename'])
 
 class TrainerLogHook(Hook):

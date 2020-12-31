@@ -175,6 +175,9 @@ class AinnoDataset(Dataset):
         """Place holder to format result to dataset specific output."""
         pass
 
+    def epoch_ops(self):
+        """Some operations that need to be performed every n epochs. """
+        pass
 
     def __getitem__(self, idx):
         if self.test_mode:
