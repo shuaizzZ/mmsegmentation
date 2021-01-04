@@ -6,8 +6,8 @@ log_config = dict(
        #dict(type='TensorboardLoggerHook')
    ])
 # yapf:enable
-seed = 4
-deterministic = None
+seed = None
+deterministic = False
 gpu_ids = [0]
 
 dist_params = dict(backend='nccl')
@@ -20,5 +20,4 @@ cudnn_benchmark = False
 work_dir = '/root/public02/manuag/zhangshuai/data/yantai_results'
 
 segmentor_type = 'manuvision'
-task_name = '2020_1222_12_cbam'
-log_name = 'train'
+task_name = '2021_0102_18_r18_nodilate_drop0.1'

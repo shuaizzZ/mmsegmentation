@@ -11,9 +11,9 @@ classes = ['background', '1diaojiao', '2liewen', '3kongdong']
 labels = [0, 1, 2, 3, 3, 0, 0, 2, 0, 1] # 4
 
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=False)
 img_scale=(512, 512)
-# crop_size = (512, 512)
+# crop_size = (256, 256)
 crop_size = (512, 768)
 
 train_pipeline = [

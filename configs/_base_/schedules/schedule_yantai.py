@@ -5,7 +5,7 @@ optimizer = dict(type='Ranger', lr=0.01, weight_decay=0.0005,
 optimizer_config = dict(type='Fp16OptimizerHook', loss_scale=512.0)
 # learning policy
 # lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=False)
-lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=True,
+lr_config = dict(policy='CosineAnnealing', min_lr=1e-5, by_epoch=True,
                  warmup='linear', warmup_iters=8, warmup_ratio=0.01,
                  warmup_by_epoch=True)
 # runtime settings

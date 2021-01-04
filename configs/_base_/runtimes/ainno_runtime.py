@@ -6,7 +6,7 @@ log_config = dict(
     ])
 # yapf:enable
 seed = 4
-deterministic = None
+deterministic = False
 gpu_ids = [0]
 
 dist_params = dict(backend='nccl')
