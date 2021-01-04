@@ -178,7 +178,7 @@ class RecallLoss(nn.Module):
         total_target = torch.sum(target_onehot, dim=(2, 3))
         ## a^2 + b^2 >= 2ab, target_onehot^2 == target_onehot
         class_wise_loss = (true_positive + self.smooth) / (total_target + self.smooth)  # N, C
-        if not class_weight:
+        if class_weight is not None:
             class_wise_loss = class_wise_loss * class_weight
 
         ## do the reduction for the weighted loss
@@ -242,7 +242,7 @@ class F1Loss(nn.Module):
         recall = self.rp_weight[0] * (true_positive + self.smooth) / (total_target + self.smooth)
         precision = self.rp_weight[1] * (true_positive + self.smooth) / (total_predict + self.smooth)
         class_wise_loss = (2 * recall * precision) / (recall + precision)  # N, C
-        if not class_weight:
+        if class_weight is not None:
             class_wise_loss = class_wise_loss * class_weight
 
         ## do the reduction for the weighted loss
