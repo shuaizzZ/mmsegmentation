@@ -275,7 +275,7 @@ class EMAU_ORG(nn.Module):
         x = self.conv1(x)
 
         # The EM Attention
-        b, c, h, w = CF.int_size(x)
+        b, c, h, w = int_size(x)
         x = x.view(b, c, h * w)  # b * c * n
         mu = self.mu.repeat(b, 1, 1)  # 1 * c * k ==> b * c * k
 
@@ -361,7 +361,7 @@ class EMAU1(nn.Module):
         x = self.conv1(x)
 
         # The EM Attention
-        b, c, h, w = CF.int_size(x)
+        b, c, h, w = int_size(x)
         n = int(h * w)
         x = x.view(b, c, n)  # b * c * n
 

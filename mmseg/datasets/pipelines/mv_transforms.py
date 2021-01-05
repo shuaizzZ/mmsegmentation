@@ -281,7 +281,7 @@ class MVCrop(object):
                 if len(cnt) > 1 and np.max(cnt) / np.sum(
                         cnt) < self.cat_max_ratio:
                     break
-                crop_bbox = self._get_random_bbox(img)
+                crop_bbox = self._get_random_bbox(img_size)
 
         return crop_bbox
 

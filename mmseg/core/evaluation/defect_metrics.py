@@ -171,6 +171,8 @@ class SegmentationMetric(object):
                 points_tar = np.where(mask_tar)
                 tar_ymin, tar_ymax = points_tar[0].min(), points_tar[0].max()
                 tar_xmin, tar_xmax = points_tar[1].min(), points_tar[1].max()
+                pre_ymin, pre_ymax = points_pre[0].min(), points_pre[0].max()
+                pre_xmin, pre_xmax = points_pre[1].min(), points_pre[1].max()
                 inter_xmin = max(pre_xmin, tar_xmin)
                 inter_ymin = max(pre_ymin, tar_ymin)
                 inter_xmax = min(pre_xmax, tar_xmax)

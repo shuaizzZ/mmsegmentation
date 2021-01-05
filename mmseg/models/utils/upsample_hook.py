@@ -32,7 +32,7 @@ class UpsampleHook(Hook):
     """
 
     def __init__(self, model, cfg, distributed=False, runstate=np.array([1])):
-        # from mmseg.datasets import build_dataloader, build_dataset
+        from mmseg.datasets import build_dataloader, build_dataset
         self.upsampleblock_list = self._find_upsampleblocks(model)
         self.upsampleblock_infos = []
         self.distributed = distributed
