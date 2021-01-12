@@ -221,8 +221,8 @@ class SegmentationMetric(object):
         sta_data = time.time()
         predicts = np.uint8(predicts)
         targets = np.uint8(targets)
-        assert np.max(predicts) <= self.nclass-1
-        assert np.max(targets) <= self.nclass-1
+        assert np.max(predicts) <= self.nclass-1, '{} > {}'.format(np.max(predicts), self.nclass-1)
+        assert np.max(targets) <= self.nclass-1, '{} > {}'.format(np.max(targets), self.nclass-1)
         end_data = time.time()
 
         ## ------ 计算pixAcc, IoU, F1 ------ ##

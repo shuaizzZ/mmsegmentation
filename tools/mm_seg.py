@@ -191,8 +191,8 @@ lr_config = dict(policy='CosineAnnealing', min_lr=1e-3, by_epoch=True,
 runner = dict(type='EpochBasedRunner', max_epochs=200)
 checkpoint_config = dict(by_epoch=True, interval=1, max_keep_ckpts=3)
 evaluation = dict(interval=1, metric='mIoU', rescale=False, ignore_index=[0],
-                  f1_cfg=dict(com_f1=True, type='pix_iof', threshold=[0, 0.3],
-                              defect_filter=dict(type='box', size=[10, 10])),
+                  f1_cfg=dict(com_f1=True, type='pix_iof', threshold=[0, 0.2, 0.2],
+                              defect_filter=dict(type='box', size=[10, 10, 10])),
                   best_metrics = ['IoU', 'Acc', 'Recall', 'Precision', 'F1'])
 # TODO load best_metrics when resume
 

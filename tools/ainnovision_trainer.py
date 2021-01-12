@@ -45,14 +45,29 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
         if isinstance(config, dict) and 'norm_cfg' in config.keys():
             mmcfg._cfg_dict['model'][module]['norm_cfg']['type'] = mmcfg.norm_cfg.type
 
+    ## num_classes
+    mmcfg.classes = mvcfg.DATASETS.CLASSES
+    mmcfg.labels = mvcfg.DATASETS.LABELS
+
+    num_classes = max(mmcfg.labels) + 1
+    if len(mmcfg.classes) < num_classes:
+        for i in range(num_classes - len(mmcfg.classes)):
+            mmcfg.classes.append('unnamed_cls{}'.format(i+len(mmcfg.classes)+1))
+    elif len(mmcfg.classes) > num_classes:
+        mmcfg.classes = mmcfg.classes[:len(mmcfg.classes) - num_classes]
+    # modify num_classes in model
+    mmcfg.num_classes = num_classes
+    for key, val in mmcfg.model.items():
+        if 'num_classes' in val:
+            mmcfg.model[key]['num_classes'] = num_classes
+
     ## dataset
     if mmcfg.data_root != mvcfg.DATASETS.ROOT:
         mmcfg.data_root = mvcfg.DATASETS.ROOT
-    mmcfg.classes = mvcfg.DATASETS.CLASSES
     for mode in ['train', 'val', 'test']:
         modify_if_exist(mmcfg._cfg_dict['data'][mode], ['type'],
                         mmcfg._cfg_dict, ['dataset_type'])
-        for para in ['data_root', 'dataset', 'classes']:
+        for para in ['data_root', 'dataset', 'classes', 'labels']:
             modify_if_exist(mmcfg._cfg_dict['data'][mode], [para],
                             mmcfg._cfg_dict, [para])
 
@@ -73,12 +88,14 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
     option_para = {'Relabel': ['labels'],
                    'MVCrop': ['crop_size'],}
     for i, trans_dict in enumerate(mmcfg.val_pipeline):
-        trans_type = trans_dict.type
-        if trans_type in option_para.keys():
-            modify_if_exist(mmcfg._cfg_dict['val_pipeline'][i],
-                            option_para[trans_type],
-                            mmcfg._cfg_dict,
-                            option_para[trans_type])
+        if trans_dict.type != 'MultiScaleFlipAug':
+            continue
+        for j, aug_dict in enumerate(mmcfg.val_pipeline[i].transforms):
+            if aug_dict.type in option_para.keys():
+                modify_if_exist(mmcfg._cfg_dict['val_pipeline'][i].transforms[j],
+                                option_para[aug_dict.type],
+                                mmcfg._cfg_dict,
+                                option_para[aug_dict.type])
     mmcfg.data.val.pipeline = mmcfg.val_pipeline
     # pipeline test
     option_para = {'MVCrop': ['crop_size'],}
