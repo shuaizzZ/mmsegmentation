@@ -1,9 +1,9 @@
 # ======================================= model settings ======================================= #
 norm_cfg = dict(type='BN', requires_grad=True)
 num_classes = 2
-dropout_ratio=0.1
-# dupsample=dict(scale=8)
-dupsample=None
+dropout_ratio=0.5
+dupsample=dict(scale=8)
+# dupsample=None
 # attention_cfg=dict(type='TPA')
 attention_cfg=None
 align_corners=False
@@ -34,10 +34,10 @@ model = dict(
         dupsample=dupsample,
         ppm_cfg=dict(ppm_channels=128,
                      pool_scales=(2, 4, 8, 16),
-                     pooling='avg',
+                     pooling='mix',
                      attention_cfg=attention_cfg),
         loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-                     dict(type='DiceLoss', loss_weight=1.0),
+                     dict(type='DiceLoss', loss_weight=2.0),
                      ]
     ),
     auxiliary_head=dict(
@@ -59,10 +59,10 @@ model = dict(
 )
 warmup_du_cfg = dict(
     interval=10,
-    optimizer=dict(type='SGD', lr=0.01),
+    optimizer=dict(type='Ranger', lr=0.01),
     # optimizer=dict(type='Adamax', lr=0.01, weight_decay=0.0005),
-    total_runs=0,
-    by_epoch=False)
+    total_runs=10,
+    by_epoch=True)
 # model training and testing settings
 train_cfg = dict()
 test_cfg = dict(mode='whole')
@@ -130,7 +130,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -180,7 +180,7 @@ workflow = [('train', 1)]
 work_dir = './model'
 
 # ======================================= schedule settings ======================================= #
-optimizer = dict(type='Ranger', lr=0.01, weight_decay=0.0005,
+optimizer = dict(type='Ranger', lr=0.05, weight_decay=0.0005,
                  paramwise_cfg = dict(custom_keys={'backbone': dict(lr_mult=0.1)})) # , decay_mult=0.9
 optimizer_config = dict(type='Fp16OptimizerHook', loss_scale=512.0)
 # learning policy
