@@ -10,8 +10,10 @@ from .pascal_context import PascalContextDataset
 from .stare import STAREDataset
 from .voc import PascalVOCDataset
 
-from .yantai import YantaiDataset
 from .ainno import AinnoDataset
+from .yantai import YantaiDataset
+from .anjie import AnjieDataset
+
 
 from .data_prefetcher import DataPrefetcher
 __all__ = [
@@ -20,6 +22,6 @@ __all__ = [
     'PascalVOCDataset', 'ADE20KDataset', 'PascalContextDataset',
     'ChaseDB1Dataset', 'DRIVEDataset', 'HRFDataset', 'STAREDataset',
 
-    'YantaiDataset', 'AinnoDataset',
+    'YantaiDataset', 'AinnoDataset', 'AnjieDataset',
     'DataPrefetcher'
 ]

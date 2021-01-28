@@ -95,13 +95,16 @@ class AinnoDataset(Dataset):
             return
         self.img_infos.append(sample)
 
+    def _get_split_file(self):
+        self._split_file = osp.join(self.data_root, '{}.csv'.format(self.split))
+        if not osp.isfile(self._split_file):
+            raise ValueError('Unexist dataset _split_file: {}'.format(self._split_file))
+
     def load_annotations(self, ):
         # test_mode 改为分csv或者dir
         if not self.test_mode:
-            _split_file = osp.join(self.data_root, '{}.csv'.format(self.split))
-            if not osp.isfile(_split_file):
-                raise ValueError('Unexist dataset _split_file: {}'.format(_split_file))
-            with open(_split_file, "r") as lines:
+            self._get_split_file()
+            with open(self._split_file, "r") as lines:
                 lines = list(lines)
             for line in lines:
                 sample = self.info2sample(line)

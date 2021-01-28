@@ -24,7 +24,7 @@ class YantaiDataset(AinnoDataset):
             palette=palette,
             labels=labels,
             **kwargs)
-        from multiprocessing import Manager
+        # from multiprocessing import Manager
         # self.manager = Manager()
         # self.total_index = self.manager.Value(int, 0)
 
