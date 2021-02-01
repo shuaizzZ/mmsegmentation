@@ -131,7 +131,7 @@ TRAIN:
         WITH_FOCAL_INIT: False
         PI: 0.01
     START_EPOCH: 1
-    END_EPOCH: 50
+    END_EPOCH: 500
     BATCH_SIZE: 2
 
     AMP: True

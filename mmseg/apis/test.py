@@ -82,7 +82,7 @@ def single_gpu_test(model, data_loader, rescale=True, show=False, out_dir=None):
     return results
 
 
-def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, out_dir=None):
+def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, draw_target=True, out_dir=None):
     """Test with single GPU.
 
     Args:
@@ -111,10 +111,15 @@ def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, out_di
     model.eval()
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
-
+    draw_target_flag = False
     for img_id, data in enumerate(data_loader):
         if runstate[0] == 0:
             sys.exit(0)
+        if 'gt_semantic_seg' in data and draw_target:
+            draw_target_flag = True
+            target = data.pop('gt_semantic_seg')[0]
+            target = target.cpu().numpy()[0]  # 1*h*w ==> h*w
+
         with torch.no_grad():
             result = model(return_loss=False, return_logit=True, **data)
         img_metas = data['img_metas'][0].data[0]
@@ -132,11 +137,14 @@ def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, out_di
         if draw_contours:
             image = cv2.imread(img_path, cv2.IMREAD_COLOR)
             h, w = image.shape[:2]
-            line = int(np.sqrt(h*w) // 512 + 1)
+            line = max(int(np.sqrt(h*w) // 512), 1)
             predict = torch.max(result, 1)[1].cpu().numpy()
             predict = np.uint8(np.squeeze(predict))
             contours, _ = cv2.findContours(predict, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             cv2.drawContours(image, contours, -1, (0, 0, 255), line)
+            if draw_target_flag:
+                contours, _ = cv2.findContours(target, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(image, contours, -1, (0, 255, 0), line)
             cv2.imwrite(osp.join(out_cnt, img_name), image)
 
         test_log.append(img_id)

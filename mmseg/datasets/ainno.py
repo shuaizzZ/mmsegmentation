@@ -29,6 +29,8 @@ class AinnoDataset(Dataset):
                  palette=None,
                  split='train',
                  test_mode=None,
+                 img_dir='',
+                 seg_map_dir='',
                  img_suffix='.png',
                  seg_map_suffix='.png',
                  reduce_zero_label=False,):
@@ -43,6 +45,8 @@ class AinnoDataset(Dataset):
         self.split = split
         self.test_mode = test_mode
         self.pipeline = Compose(pipeline)
+        self.img_dir = img_dir
+        self.seg_map_dir = seg_map_dir
         self.img_suffix = img_suffix
         self.seg_map_suffix = seg_map_suffix
         self.reduce_zero_label = reduce_zero_label

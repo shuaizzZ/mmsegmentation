@@ -20,4 +20,4 @@ cudnn_benchmark = False
 work_dir = '/root/public02/manuag/zhangshuai/data/yantai_results'
 
 segmentor_type = 'manuvision'
-task_name = '2021_0102_18_r18_nodilate_drop0.1'
+task_name = '2021_0104_17_r18_nodilate_dice_p^1'

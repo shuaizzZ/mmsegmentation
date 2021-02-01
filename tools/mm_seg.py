@@ -123,6 +123,8 @@ test_pipeline = [
         img_scale=img_scale,
         flip=False,
         transforms=[
+            dict(type='MVCrop', crop_size=crop_size, crop_mode='center',
+                 pad_mode=['constant', 'constant'], pad_fill=[0, 0], pad_expand=1.0),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
