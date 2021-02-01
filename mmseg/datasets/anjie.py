@@ -1,6 +1,7 @@
 
 import time
 import random
+import os
 import os.path as osp
 
 from mmseg.datasets.builder import DATASETS
@@ -101,16 +102,24 @@ class AnjieDataset(AinnoDataset):
         self.ng_ori_samples = []
         self.class_samples = {}
         self.total_index = 0
-
-        self._get_split_file()
-        if not osp.isfile(self._split_file):
-            raise ValueError('Unexist dataset _split_file: {}'.format(self._split_file))
-        with open(self._split_file, "r") as lines:
-            lines = list(lines)
-        for line in lines:
-            sample = self.info2sample(line)
-            self.update_samples(sample)
-
+        if not self.test_mode:
+            self._get_split_file()
+            if not osp.isfile(self._split_file):
+                raise ValueError('Unexist dataset _split_file: {}'.format(self._split_file))
+            with open(self._split_file, "r") as lines:
+                lines = list(lines)
+            for line in lines:
+                sample = self.info2sample(line)
+                self.update_samples(sample)
+        else:
+            # test_dir = osp.join(self.data_root, self.split)
+            test_dir = '/root/public02/manuag/zhangshuai/data/anjie/real_data/train_split/image'
+            assert osp.isdir(test_dir), test_dir
+            for img_name in os.listdir(test_dir):
+                sample = dict(filename=osp.join(test_dir, img_name),
+                              ann=dict(seg_map=None))
+                self.img_infos.append(sample)
+                # self.update_samples(sample)
         ##---------------- 训练集类别平衡 ----------------##
         self.ok_ori_len = len(self.ok_ori_samples)
         if self.split == 'train':
@@ -131,6 +140,7 @@ class AnjieDataset(AinnoDataset):
 
     def epoch_ops(self):
         """Some operations that need to be performed every n epochs. """
+        print('_epoch_balance')
         self._epoch_balance()
 
     def __getitem__(self, idx):

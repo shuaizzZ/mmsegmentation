@@ -37,7 +37,7 @@ model = dict(
                      pooling='mix',
                      attention_cfg=attention_cfg),
         loss_decode=[dict(type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
-                     dict(type='DiceLoss', loss_weight=2.0),
+                     dict(type='DiceLoss', loss_weight=1.0),
                      ]
     ),
     auxiliary_head=dict(
@@ -89,7 +89,7 @@ train_pipeline = [
     dict(type='MVResize', h_range=(0.8, 1.2), w_range=(0.8, 1.2), keep_ratio=True),
     dict(type='MVRotate', angle_range=(-45, 45), center=None),
     dict(type='MVCrop', crop_size=crop_size, crop_mode='random',
-         pad_mode=["range", "constant"], pad_fill=[[0, 255], 0], pad_expand=1.2),
+         pad_mode=["constant", "constant"], pad_fill=[0, 0], pad_expand=1.2),
     dict(type='PhotoMetricDistortion',
          brightness_delta=50,
          contrast_range=(0.8, 1.2),
@@ -155,7 +155,7 @@ data = dict(
         dataset=dataset,
         data_root=data_root,
         classes=classes,
-        split='test',
+        split='val',
         test_mode=True,
         pipeline=test_pipeline),)
 
@@ -179,12 +179,12 @@ resume_from = None
 workflow = [('train', 1)]
 
 work_dir = data_root + '/' + dataset
-task_name = 'anjie_2021_0128'
+task_name = 'anjie_2021_0131'
 segmentor_type = 'manuvision'
 
 # ======================================= schedule settings ======================================= #
 optimizer = dict(type='Ranger', lr=0.01, weight_decay=0.0005,
-                 paramwise_cfg = dict(custom_keys={'backbone': dict(lr_mult=0.1)})) # , decay_mult=0.9
+                 paramwise_cfg = dict(custom_keys={'backbone': dict(lr_mult=0.1)})) # , Ranger decay_mult=0.9
 optimizer_config = dict(type='Fp16OptimizerHook', loss_scale=512.0)
 # learning policy
 lr_config = dict(policy='CosineAnnealing', min_lr=2e-5, by_epoch=True,
