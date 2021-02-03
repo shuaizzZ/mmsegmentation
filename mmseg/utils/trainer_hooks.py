@@ -1,21 +1,12 @@
 
 import sys
-import time
-import shutil
 import os
-import os.path as osp
 
 from yutils.csv.csv import CSV
-import torch
-from torch.optim import Optimizer
 
-import mmcv
-from mmcv.parallel import is_module_wrapper
-from mmcv.utils import mkdir_or_exist
 from mmcv.runner import HOOKS, Hook
 from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu
 from mmcv.runner.dist_utils import allreduce_params, master_only
-import numpy as np
 
 class CheckRunstateHook(Hook):
     def __init__(self, runstate):
