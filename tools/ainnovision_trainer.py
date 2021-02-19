@@ -62,8 +62,8 @@ def merge_to_mmcfg_from_mvcfg(mmcfg, mvcfg):
             mmcfg.model[key]['num_classes'] = num_classes
 
     ## dataset
-    if mmcfg.data_root != mvcfg.DATASETS.ROOT:
-        mmcfg.data_root = mvcfg.DATASETS.ROOT
+    mmcfg.data_root = mvcfg.DATASETS.ROOT
+    mmcfg.dataset_type = mvcfg.DATASETS.TYPE
     for mode in ['train', 'val', 'test']:
         modify_if_exist(mmcfg._cfg_dict['data'][mode], ['type'],
                         mmcfg._cfg_dict, ['dataset_type'])

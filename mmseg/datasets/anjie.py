@@ -131,7 +131,9 @@ class AnjieDataset(AinnoDataset):
             self.ok_len = self.ok_ori_len
             self.img_infos = self.ok_ori_samples + self.ng_ori_samples
             self.ng_len = len(self.ng_ori_samples)
-
+        elif self.split == 'test':
+            self.ok_len = len(self.img_infos)
+            self.ng_len = 0
         self.set_len = len(self.img_infos)
         assert self.set_len == self.ok_len + self.ng_len
         self.dataset_infos['sample_nums'] = '(OK: {}, NG: {} ,Total: {})'.format(
@@ -140,7 +142,6 @@ class AnjieDataset(AinnoDataset):
 
     def epoch_ops(self):
         """Some operations that need to be performed every n epochs. """
-        print('_epoch_balance')
         self._epoch_balance()
 
     def __getitem__(self, idx):

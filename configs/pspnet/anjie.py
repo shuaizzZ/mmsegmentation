@@ -155,7 +155,7 @@ data = dict(
         dataset=dataset,
         data_root=data_root,
         classes=classes,
-        split='val',
+        split='test',
         test_mode=True,
         pipeline=test_pipeline),)
 
@@ -179,7 +179,7 @@ resume_from = None
 workflow = [('train', 1)]
 
 work_dir = data_root + '/' + dataset
-task_name = 'anjie_2021_0131'
+task_name = 'anjie_2021_0203'
 segmentor_type = 'manuvision'
 
 # ======================================= schedule settings ======================================= #

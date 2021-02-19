@@ -95,7 +95,8 @@ def mv_single_gpu_test(model, data_loader, runstate, draw_contours=False, draw_t
     Returns:
         list: The prediction results.
     """
-
+    if not osp.isdir(out_dir):
+        os.mkdir(out_dir)
     log_path = osp.join(out_dir, 'test_log.csv')
     if osp.isfile(log_path):
         os.remove(log_path)
