@@ -194,10 +194,12 @@ class SegmentationMetric(object):
         self.class_defect_info['tp'] += tp_class_num
         self.class_defect_info['target'] += tar_class_num
         self.class_defect_info['predict'] += pre_class_num
-        # label_num-1 去掉背景
+        # total_num-1 去掉背景
         self.total_defect_info['tp'] += tp_total_num
-        self.total_defect_info['target'] += tar_total_num - 1
-        self.total_defect_info['predict'] += pre_total_num - 1
+        # self.total_defect_info['target'] += tar_total_num - 1
+        # self.total_defect_info['predict'] += pre_total_num - 1
+        self.total_defect_info['target'] += np.nansum(tar_class_num)
+        self.total_defect_info['predict'] += np.nansum(pre_class_num)
 
     def segmentation_defect_f1(self, predicts, targets):
         """Batch truePositive_and_total
