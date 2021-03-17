@@ -17,7 +17,7 @@ try:
     from mmseg import __version__
     from mmseg.apis import (set_random_seed, trainer_segmentor,
                             mv_single_gpu_test,
-                            _convert_batchnorm, _demo_mm_inputs, pytorch2onnx)
+                            _convert_batchnorm, pytorch2onnx)
     from mmseg.datasets.builder import build_dataset, build_dataloader
     from mmseg.models.builder import build_segmentor
     from mmseg.models.pretrained_models import pretrained_models, get_pretrained_path
